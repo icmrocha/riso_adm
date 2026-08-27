@@ -206,9 +206,9 @@
       gap: 10px;
     }
 
-    /* PAINEL DE CARDS DE HORÁRIO (OCULTO POR DEFAULT) */
+    /* PAINEL DE CARDS DE HORÁRIO (Aparece ao filtrar por data) */
     .slots-summary-grid {
-      display: none; /* Inicialmente oculto; exibe apenas ao filtrar por data */
+      display: none;
       grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
       gap: 10px;
       margin-bottom: 20px;
@@ -238,12 +238,29 @@
       color: var(--success);
     }
 
+    /* BLOCO AGRUPADOR POR DIA */
+    .date-block {
+      margin-bottom: 28px;
+    }
+
+    .date-block-title {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: var(--text);
+      margin-bottom: 12px;
+      padding-bottom: 6px;
+      border-bottom: 2px solid var(--primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
     /* SEÇÕES E TABELAS DE RESERVA POR HORÁRIO */
     .time-section {
       background: var(--card-bg);
       border-radius: 12px;
       box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-      margin-bottom: 20px;
+      margin-bottom: 14px;
       overflow: hidden;
       border: 1px solid var(--border);
     }
@@ -252,7 +269,7 @@
       background-color: #f1f5f9;
       padding: 12px 16px;
       font-weight: 700;
-      font-size: 1rem;
+      font-size: 0.95rem;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -295,7 +312,7 @@
       font-family: monospace;
     }
 
-    /* ESTILOS DE STATUS DE RESERVA (REALIZADA / CANCELADA / PASSADA) */
+    /* ESTILOS DE STATUS DE RESERVA */
     tr.status-realizada {
       background-color: var(--success-light) !important;
     }
@@ -426,9 +443,6 @@
     carregarTodasReservas();
     carregarDatasLiberadasDoServidor();
 
-    /**
-     * Quando o usuário escolhe uma data no input de filtro
-     */
     function aoAlterarFiltroData() {
       const dataVal = inputData.value;
       const btnLimpar = document.getElementById("btnLimparFiltro");
@@ -443,9 +457,6 @@
       }
     }
 
-    /**
-     * Limpa o filtro de data e volta ao modo geral (exibe tudo e oculta os cards de contador)
-     */
     function limparFiltroData() {
       inputData.value = "";
       document.getElementById("btnLimparFiltro").style.display = "none";
@@ -464,9 +475,6 @@
       }
     }
 
-    /**
-     * Carrega todas as reservas do sistema (Default)
-     */
     async function carregarTodasReservas() {
       const containerReservas = document.getElementById("containerReservas");
       containerReservas.innerHTML = `<div class="loading-overlay">Buscando todas as reservas...</div>`;
@@ -481,7 +489,7 @@
             const hojeDataObj = parseDataPtBr(formatarDataIsoParaPtBr(hojeIso));
             lista = lista.filter(r => parseDataPtBr(r.data) >= hojeDataObj);
           }
-          renderSecoesPorHorario(lista, true);
+          renderAgrupadoPorDataEHorario(lista);
         } else {
           containerReservas.innerHTML = `<div class="loading-overlay">Nenhuma reserva encontrada.</div>`;
         }
@@ -490,9 +498,6 @@
       }
     }
 
-    /**
-     * Carrega reservas filtradas por uma data específica + atualiza o contador dos cards
-     */
     async function carregarReservasPorData(dataVal) {
       const summaryContainer = document.getElementById("slotsSummary");
       const containerReservas = document.getElementById("containerReservas");
@@ -501,7 +506,6 @@
       containerReservas.innerHTML = `<div class="loading-overlay">Buscando reservas do dia...</div>`;
 
       try {
-        // Busca disponibilidade para os cards
         const respDisp = await fetch(`${API_URL}?data=${dataVal}`);
         const resDisp = await respDisp.json();
 
@@ -509,7 +513,6 @@
           renderSlotsSummary(resDisp.disponibilidade);
         }
 
-        // Busca lista de reservas daquela data
         const respList = await fetch(`${API_URL}?data=${dataVal}&action=getReservasData`);
         const resList = await respList.json();
 
@@ -519,7 +522,7 @@
             const hojeDataObj = parseDataPtBr(formatarDataIsoParaPtBr(hojeIso));
             lista = lista.filter(r => parseDataPtBr(r.data) >= hojeDataObj);
           }
-          renderSecoesPorHorario(lista, false);
+          renderAgrupadoPorDataEHorario(lista);
         } else {
           containerReservas.innerHTML = `<div class="loading-overlay">Nenhuma reserva encontrada para esta data.</div>`;
         }
@@ -551,9 +554,9 @@
     }
 
     /**
-     * Agrupa as reservas em blocos/seções por horário
+     * AGRUPA PRIMEIRO POR DATA, E DEPOIS CRIA AS SEÇÕES DE HORÁRIO
      */
-    function renderSecoesPorHorario(reservas, exibeDataNaLinha = false) {
+    function renderAgrupadoPorDataEHorario(reservas) {
       const containerReservas = document.getElementById("containerReservas");
       containerReservas.innerHTML = "";
 
@@ -562,7 +565,7 @@
         return;
       }
 
-      // Ordena cronologicamente por data e horário
+      // 1. Ordena cronologicamente por Data e depois por Horário
       reservas.sort((a, b) => {
         const dataA = parseDataPtBr(a.data);
         const dataB = parseDataPtBr(b.data);
@@ -570,92 +573,102 @@
         return a.horario.localeCompare(b.horario);
       });
 
-      // Agrupa por chave
-      const grupos = {};
+      // 2. Agrupa por Data -> Horário
+      const estrutura = {}; // { "29/08/2026": { "12:00": [...], "13:00": [...] } }
       reservas.forEach(res => {
-        const chave = exibeDataNaLinha ? `${res.data} - ${res.horario}` : res.horario;
-        if (!grupos[chave]) grupos[chave] = [];
-        grupos[chave].push(res);
+        if (!estrutura[res.data]) estrutura[res.data] = {};
+        if (!estrutura[res.data][res.horario]) estrutura[res.data][res.horario] = [];
+        estrutura[res.data][res.horario].push(res);
       });
 
       const hojeObj = parseDataPtBr(formatarDataIsoParaPtBr(hojeIso));
 
-      Object.keys(grupos).forEach(chaveSlot => {
-        const listaSlot = grupos[chaveSlot];
-        const totalPessoas = listaSlot.reduce((acc, r) => acc + (r.codigo === "CANCELADA" ? 0 : Number(r.pessoas)), 0);
+      // 3. Renderiza no DOM
+      Object.keys(estrutura).forEach(dataChave => {
+        const dateBlock = document.createElement("div");
+        dateBlock.className = "date-block";
 
-        const section = document.createElement("div");
-        section.className = "time-section";
+        const titleDiv = document.createElement("div");
+        titleDiv.className = "date-block-title";
+        titleDiv.innerHTML = `📅 Data: ${dataChave}`;
+        dateBlock.appendChild(titleDiv);
 
-        let htmlHeader = `
-          <div class="time-section-header">
-            <span>🕒 Horário: ${chaveSlot}</span>
-            <span style="font-size: 0.85rem; font-weight: 600; color: var(--muted);">${totalPessoas}/8 pessoas ocupadas</span>
-          </div>
-        `;
+        const horariosDoDia = estrutura[dataChave];
 
-        let htmlTabela = `
-          <div class="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th style="width: 40px; text-align: center;">✓</th>
-                  <th>Código</th>
-                  ${exibeDataNaLinha ? '<th>Data</th>' : ''}
-                  <th>Cliente</th>
-                  <th>Telefone</th>
-                  <th>Pessoas</th>
-                  <th>Observações / Alergias</th>
-                  <th style="width: 60px; text-align: center;">Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-        `;
+        Object.keys(horariosDoDia).forEach(horarioChave => {
+          const listaSlot = horariosDoDia[horarioChave];
+          const totalPessoas = listaSlot.reduce((acc, r) => acc + (r.codigo === "CANCELADA" ? 0 : Number(r.pessoas)), 0);
 
-        listaSlot.forEach(res => {
-          const ehRealizada = res.codigo === "REALIZADA";
-          const ehCancelada = res.codigo === "CANCELADA";
-          const dataResObj = parseDataPtBr(res.data);
-          const ehPassada = dataResObj < hojeObj;
+          const section = document.createElement("div");
+          section.className = "time-section";
 
-          let classeLinha = "";
-          if (ehCancelada) classeLinha = "status-cancelada";
-          else if (ehRealizada) classeLinha = "status-realizada";
-          else if (ehPassada && exibeDataNaLinha) classeLinha = "data-passada";
-
-          const codigoExibicao = ehCancelada ? "CANCELADA" : (ehRealizada ? "REALIZADA" : res.codigo);
-
-          htmlTabela += `
-            <tr class="${classeLinha}">
-              <td style="text-align: center;">
-                <input type="checkbox" ${ehRealizada ? 'checked' : ''} ${ehCancelada ? 'disabled' : ''} 
-                  onchange="alterarStatusReserva('${res.codigoOriginal || res.codigo}', this.checked ? 'REALIZADA' : 'REABRIR')">
-              </td>
-              <td><span class="badge-code">${codigoExibicao}</span></td>
-              ${exibeDataNaLinha ? `<td><strong>${res.data}</strong></td>` : ''}
-              <td>${res.nome}</td>
-              <td><a href="https://wa.me/55${res.telefone.replace(/\D/g,'')}" target="_blank" style="color:var(--primary); font-weight: 600;">${res.telefone}</a></td>
-              <td><strong>${res.pessoas} p</strong></td>
-              <td>${res.observacoes}</td>
-              <td style="text-align: center;">
-                ${ehCancelada ? 
-                  `<button class="btn-action-icon" title="Reabrir Reserva" onclick="alterarStatusReserva('${res.codigoOriginal}', 'REABRIR')">🔄</button>` : 
-                  `<button class="btn-action-icon" title="Cancelar Reserva" onclick="alterarStatusReserva('${res.codigo}', 'CANCELADA')">🗑️</button>`
-                }
-              </td>
-            </tr>
+          let htmlHeader = `
+            <div class="time-section-header">
+              <span>🕒 Horário: ${horarioChave}</span>
+              <span style="font-size: 0.85rem; font-weight: 600; color: var(--muted);">${totalPessoas}/8 pessoas ocupadas</span>
+            </div>
           `;
+
+          let htmlTabela = `
+            <div class="table-container">
+              <table>
+                <thead>
+                  <tr>
+                    <th style="width: 40px; text-align: center;">✓</th>
+                    <th>Código</th>
+                    <th>Cliente</th>
+                    <th>Telefone</th>
+                    <th>Pessoas</th>
+                    <th>Observações / Alergias</th>
+                    <th style="width: 60px; text-align: center;">Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+          `;
+
+          listaSlot.forEach(res => {
+            const ehRealizada = res.codigo === "REALIZADA";
+            const ehCancelada = res.codigo === "CANCELADA";
+            const dataResObj = parseDataPtBr(res.data);
+            const ehPassada = dataResObj < hojeObj;
+
+            let classeLinha = "";
+            if (ehCancelada) classeLinha = "status-cancelada";
+            else if (ehRealizada) classeLinha = "status-realizada";
+            else if (ehPassada) classeLinha = "data-passada";
+
+            const codigoExibicao = ehCancelada ? "CANCELADA" : (ehRealizada ? "REALIZADA" : res.codigo);
+
+            htmlTabela += `
+              <tr class="${classeLinha}">
+                <td style="text-align: center;">
+                  <input type="checkbox" ${ehRealizada ? 'checked' : ''} ${ehCancelada ? 'disabled' : ''} 
+                    onchange="alterarStatusReserva('${res.codigoOriginal || res.codigo}', this.checked ? 'REALIZADA' : 'REABRIR')">
+                </td>
+                <td><span class="badge-code">${codigoExibicao}</span></td>
+                <td>${res.nome}</td>
+                <td><a href="https://wa.me/55${res.telefone.replace(/\D/g,'')}" target="_blank" style="color:var(--primary); font-weight: 600;">${res.telefone}</a></td>
+                <td><strong>${res.pessoas} p</strong></td>
+                <td>${res.observacoes}</td>
+                <td style="text-align: center;">
+                  ${ehCancelada ? 
+                    `<button class="btn-action-icon" title="Reabrir Reserva" onclick="alterarStatusReserva('${res.codigoOriginal}', 'REABRIR')">🔄</button>` : 
+                    `<button class="btn-action-icon" title="Cancelar Reserva" onclick="alterarStatusReserva('${res.codigo}', 'CANCELADA')">🗑️</button>`
+                  }
+                </td>
+              </tr>
+            `;
+          });
+
+          htmlTabela += `</tbody></table></div>`;
+          section.innerHTML = htmlHeader + htmlTabela;
+          dateBlock.appendChild(section);
         });
 
-        htmlTabela += `</tbody></table></div>`;
-        section.innerHTML = htmlHeader + htmlTabela;
-        containerReservas.appendChild(section);
+        containerReservas.appendChild(dateBlock);
       });
     }
 
-    /**
-     * Envia solicitação de alteração de status para o Apps Script
-     */
     async function alterarStatusReserva(codigoReserva, novoStatus) {
       try {
         const payload = {
