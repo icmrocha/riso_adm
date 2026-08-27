@@ -7,24 +7,20 @@
   
   <!-- ESTILOS CSS DA PÁGINA DE RESERVAS -->
   <style>
-    /* 1. VARIÁVEIS DE DESIGN E PALETA DE CORES */
     :root {
-      --bg: #f8fafc;            /* Fundo suave da página (cinza claro) */
-      --card-bg: #ffffff;       /* Fundo dos cartões e formulário (branco) */
-      --text: #0f172a;          /* Cor principal dos textos e títulos */
-      --primary: #2563eb;       /* Azul primário para destaques e botões ativos */
-      --primary-hover: #1d4ed8; /* Azul para estado de hover (passar o mouse) */
-      --success: #10b981;       /* Verde de sucesso para o comprovante digital */
-      --border: #cbd5e1;        /* Cor das bordas das caixas de input */
-      --muted: #64748b;         /* Cor para textos de ajuda e legendas */
-      --disabled-bg: #f1f5f9;   /* Fundo dos botões de horários sem vaga/esmaecidos */
-      --disabled-text: #94a3b8; /* Texto dos horários esmaecidos */
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text: #0f172a;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --success: #10b981;
+      --border: #cbd5e1;
+      --muted: #64748b;
+      --disabled-bg: #f1f5f9;
+      --disabled-text: #94a3b8;
     }
 
-    /* 2. RESET BÁSICO E CONFIGURAÇÃO DA TELA */
-    * { 
-      box-sizing: border-box; 
-    }
+    * { box-sizing: border-box; }
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -38,7 +34,6 @@
       padding-bottom: 40px;
     }
 
-    /* 3. LOGO DA RISO NO TOPO */
     .header-logo {
       text-align: center;
       margin-bottom: 16px;
@@ -49,7 +44,6 @@
       height: auto;
     }
 
-    /* 4. CARTÃO DE APRESENTAÇÃO E BULLETS INFORMATIVOS */
     .intro-section {
       background: var(--card-bg);
       padding: 20px;
@@ -108,7 +102,6 @@
       font-size: 0.8rem;
     }
 
-    /* 5. ESTRUTURA DO FORMULÁRIO DE RESERVA */
     .form-container {
       background: var(--card-bg);
       padding: 20px;
@@ -147,7 +140,6 @@
       border-color: transparent;
     }
 
-    /* 6. GRID DE BOTÕES DOS HORÁRIOS (SLOTS) */
     .slots-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -219,7 +211,6 @@
       cursor: not-allowed;
     }
 
-    /* 7. CARTÃO DE COMPROVANTE DIGITAL */
     .voucher-card {
       background: var(--card-bg);
       border-radius: 12px;
@@ -275,11 +266,11 @@
     <img src="../logo.png" alt="Logo RISO" class="logo">
   </div>
 
-  <!-- SEÇÃO INICIAL: BOAS-VINDAS E REGRAS OPERACIONAIS -->
+  <!-- SEÇÃO INICIAL -->
   <div class="intro-section" id="introSection">
     <h1>Que bom ter você por aqui!</h1>
     <div class="intro-text">
-      Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
+      Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
     </div>
 
     <ul class="bullets-list">
@@ -295,29 +286,25 @@
     </ul>
   </div>
 
-  <!-- SEÇÃO DO FORMULÁRIO DE RESERVA -->
+  <!-- SEÇÃO DO FORMULÁRIO -->
   <div class="form-container" id="formContainer">
     <form id="reservationForm" onsubmit="submitReservation(event)">
       
-      <!-- NOME COMPLETO -->
       <div class="form-group">
         <label for="nome">Nome:</label>
         <input type="text" id="nome" required placeholder="Seu nome completo">
       </div>
 
-      <!-- TELEFONE / WHATSAPP -->
       <div class="form-group">
         <label for="telefone">Telefone:</label>
         <input type="tel" id="telefone" required placeholder="(24) 99999-9999" maxlength="15" oninput="mascaraTelefone(this)">
       </div>
 
-      <!-- CALENDÁRIO INTERATIVO -->
       <div class="form-group">
         <label for="dataReserva">Dia da Reserva:</label>
         <input type="date" id="dataReserva" required onchange="consultarDisponibilidade()">
       </div>
 
-      <!-- SELETOR DE PESSOAS (EXIGE ESCOLHA EXPLÍCITA DO CLIENTE) -->
       <div class="form-group">
         <label for="pessoas">Quantidade de pessoas na reserva:</label>
         <select id="pessoas" required disabled onchange="atualizarLotacaoSlots()">
@@ -333,7 +320,6 @@
         </select>
       </div>
 
-      <!-- GRID DE SLOTS DE HORÁRIO -->
       <div class="form-group">
         <label>Horário:</label>
         <div class="slots-grid" id="slotsContainer">
@@ -343,13 +329,11 @@
         <div class="helper-text" id="slotsHelper" style="display: none; font-weight: 500;"></div>
       </div>
 
-      <!-- CAIXA ÚNICA DE OBSERVAÇÕES E OCASIÕES ESPECIAIS -->
       <div class="form-group">
         <label for="especialObs">Precisa de algo especial? Nos conte aqui! (opcional)</label>
         <textarea id="especialObs" rows="4" placeholder="• sua reserva celebra alguma ocasião especial? (aniversario, jantar romantico, etc)&#10;• possui alguma alergia, intolerância ou algo que não consuma de jeito nenhum?"></textarea>
       </div>
 
-      <!-- BOTÃO DE AÇÃO -->
       <button type="submit" class="btn-submit" id="btnSubmit" disabled>Reservar</button>
       <div class="loading-overlay" id="loadingSubmit">Processando a sua reserva...</div>
     </form>
@@ -370,7 +354,6 @@
     </div>
   </div>
 
-  <!-- SCRIPTS E LÓGICA DE INTEGRAÇÃO (FRONTEND + APPS SCRIPT) -->
   <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbyOyPr6hWM80KTGIhsrML7wWX1qxhGDW96j-uFNJqX-MmLcD-uiTLTojW5kkFdK870L/exec";
 
@@ -412,7 +395,6 @@
       selectedHorario = null;
       document.getElementById("btnSubmit").disabled = true;
 
-      // Reseta o seletor exigindo que o usuário escolha o número de pessoas
       selectPessoas.disabled = false;
       selectPessoas.value = "";
 
@@ -541,7 +523,6 @@
 
           document.getElementById("voucherCard").style.display = "block";
         } else {
-          // Exibe o alerta emitido pelo servidor caso tente estourar o limite de 8 pessoas
           alert(result.message || "Ocorreu um erro ao salvar sua reserva. Tente novamente.");
           btnSubmit.disabled = false;
         }
