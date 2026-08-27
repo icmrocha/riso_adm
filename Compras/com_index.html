@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Controle de Compras Riso</title>
+  <style>
+    /* ==========================================================================
+       1. ARQUITETURA DE DESIGN SYSTEM E VARIÁVEIS CSS
+       Uso de CSS Custom Properties para facilitar a manutenção e temas.
+       ========================================================================== */
+    :root {
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text: #0f172a;
+      --primary: #10b981;
+      --primary-dark: #059669;
+      --secondary: #2563eb;
+      --border: #e2e8f0;
+      --muted: #64748b;
+      --extra-tag: #f59e0b;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 12px;
+      max-width: 650px;
+      margin-left: auto;
+      margin-right: auto;
+      padding-bottom: 80px;
+    }
+
+    /* LOGOTIPO E MARCA */
+    .header-logo {
+      text-align: center;
+      margin-top: 4px;
+      margin-bottom: 8px;
+    }
+
+    .logo {
+      max-width: 140px;
+      height: auto;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      text-align: center;
+      margin-bottom: 12px;
+    }
+
+    .sync-status {
+      text-align: center;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    /* BARRA FIXA COM COMPORTAMENTO STICKY NO TOPO DA VIEWPORT */
+    .top-bar {
+      position: sticky;
+      top: 0;
+      background: var(--bg);
+      padding: 8px 0;
+      z-index: 10;
+    }
+
+    .search-box {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.95rem;
+      margin-bottom: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    .add-extra-container {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+
+    .add-extra-input {
+      flex: 1;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 0.85rem;
+    }
+
+    .controls-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+
+    .btn {
+      padding: 10px 8px;
+      border: none;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 0.8rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+
+    .btn-primary { background-color: var(--primary); color: white; }
+    .btn-secondary { background-color: var(--secondary); color: white; }
+    .btn-dark { background-color: #334155; color: white; }
+    .btn-danger { background-color: #ef4444; color: white; grid-column: span 2; }
+
+    /* LAYOUT CARD CATEGORIA */
+    .category {
+      background: var(--card-bg);
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      border-left: 4px solid var(--secondary);
+    }
+
+    /* VARIANTES DE CATEGORIA (ITENS ADICIONADOS À MÃO) */
+    .category.extra-category {
+      border-left-color: var(--extra-tag);
+      background-color: #fffbeb;
+    }
+
+    .category-title {
+      font-weight: 700;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    .category.extra-category .category-title {
+      color: #b45309;
+    }
+
+    /* LINHA DO INSUMO (LIST ITEM) */
+    .item-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+      gap: 8px;
+    }
+
+    .item-row:last-child { border-bottom: none; }
+
+    /* ESTADO CONCLUÍDO / COMPRADO */
+    .item-row.completed {
+      opacity: 0.4;
+    }
+
+    .item-row.completed .item-name {
+      text-decoration: line-through;
+    }
+
+    /* REGRA CSS DE OCULTAÇÃO CONDICIONAL VIA CLASSE PAI NO <body> */
+    .hide-completed .item-row.completed {
+      display: none !important;
+    }
+
+    .item-left {
+      display: flex;
+      align-items: center;
+      flex: 1;
+      gap: 10px;
+    }
+
+    .item-checkbox {
+      width: 20px;
+      height: 20px;
+      accent-color: var(--primary);
+      cursor: pointer;
+      display: none; /* Exibido via JS apenas se o item possuir quantidade preenchida */
+    }
+
+    .has-qty .item-checkbox {
+      display: block;
+    }
+
+    .item-info {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .item-name {
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+
+    .item-price {
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
+    .item-input {
+      width: 100px;
+      padding: 8px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      text-align: center;
+      font-size: 0.9rem;
+    }
+
+    .item-input:focus {
+      outline: 2px solid var(--secondary);
+      border-color: transparent;
+    }
+
+    /* INDICADOR VISUAL PARA CAMPOS PREENCHIDOS */
+    .item-input.has-value {
+      background-color: #ecfdf5;
+      border-color: var(--primary);
+      font-weight: bold;
+      color: var(--primary-dark);
+    }
+
+    .loading-msg {
+      text-align: center;
+      padding: 30px;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ESTRUTURA SEMÂNTICA HTML DO APP -->
+  <div class="header-logo">
+    <img src="../logo.png" alt="Logo RISO" class="logo">
+  </div>
+
+  <h1>Controle de Compras</h1>
+  <!-- ÁREA DE FEEDBACK EM TEMPO REAL SOBRE SINCRONIZAÇÃO COM A API -->
+  <div id="syncStatus" class="sync-status">Sincronizando...</div>
+
+  <div class="top-bar">
+    <!-- INPUT DE BUSCA INSTANTÂNEA -->
+    <input type="text" id="searchInput" class="search-box" placeholder="Buscar insumo..." oninput="render()">
+
+    <!-- FORMULÁRIO DE INSERÇÃO DINÂMICA DE INSUMOS LOCAIS -->
+    <form class="add-extra-container" onsubmit="addExtraItem(event)">
+      <input type="text" id="extraItemInput" class="add-extra-input" placeholder="Adicionar item extra à mão..." />
+      <button type="submit" class="btn btn-secondary" style="padding: 0 12px;">+ Adicionar</button>
+    </form>
+
+    <!-- PAINEL DE AÇÕES DE INTERFACE -->
+    <div class="controls-grid">
+      <button class="btn btn-secondary" id="btnFilterToBuy" onclick="toggleFilterToBuy()">Ver só o que comprar</button>
+      <button class="btn btn-dark" id="btnHideCompleted" onclick="toggleHideCompleted()">Ocultar Itens Marcados</button>
+      <button class="btn btn-secondary" id="btnToggleViewMode" onclick="toggleViewMode()" style="grid-column: span 2;">Ver em Ordem Alfabética</button>
+      <button class="btn btn-danger" onclick="resetAll()">Resetar / Nova Compra</button>
+    </div>
+  </div>
+
+  <!-- CONTAINER DE INJEÇÃO DO DOM (RENDER ENGINE) -->
+  <div id="itemsContainer">
+    <div class="loading-msg">Carregando insumos...</div>
+  </div>
+
+  <script>
+    /* ==========================================================================
+       2. CONFIGURAÇÕES GLOBAIS E ENDPOINTS DA API
+       ========================================================================== */
+    // Endpoint do Google Apps Script publicado como Web App (Atua como Backend REST)
+    const API_URL = "https://script.google.com/macros/s/AKfycbzPUIB-iJ6kVEwpuCFyOPGogzutrhH2DgyRbloeN6-5munbv8QmbAJSYHIOmx5sq7DUew/exec";
+
+    /* ==========================================================================
+       3. GERENCIAMENTO DE ESTADO (APPLICATION STATE MANAGEMENT)
+       ========================================================================== */
+    let rawData = [];           // Array master com os itens base vindos do Sheets
+    let extraItems = [];        // Array com os itens adicionados manualmente na sessão
+    let savedState = {};        // Hashmap de quantidades e checkboxes: { "Insumo": { qty: "2kg", done: true } }
+    let isSaving = false;       // Flag de trava/mutex para operações de I/O em andamento
+    let syncTimer = null;       // Referência de timer para o mecanismo de Debounce
+
+    // FLAGS DE ESTADO DE INTERFACE (UI STATES)
+    let filterOnlyToBuy = false;
+    let hideCompleted = false;
+    let viewAlphabetical = false;
+
+    /* ==========================================================================
+       4. COMUNICAÇÃO ASSÍNCRONA E SINCRONIZAÇÃO (REST / FETCH API)
+       ========================================================================== */
+
+    /**
+     * Requisita o estado atualizado do backend (Google Apps Script / Sheets)
+     * Implementa 'Guards' contra sobrescrita durante digitação do usuário.
+     */
+    async function loadData() {
+      // GUARD 1: Se um input de texto estiver focado, ignora o re-render automático para não travar o teclado
+      const activeElement = document.activeElement;
+      if (activeElement && activeElement.tagName === "INPUT" && activeElement.type === "text") {
+        return;
+      }
+
+      // GUARD 2: Se uma gravação (POST) estiver em curso, adia a leitura para evitar Race Conditions
+      if (isSaving) return;
+
+      const statusEl = document.getElementById("syncStatus");
+      try {
+        const response = await fetch(API_URL);
+        const data = await response.json();
+        
+        if (data.masterList && Array.isArray(data.masterList)) {
+          rawData = data.masterList;
+          extraItems = data.extraItems || [];
+          
+          // Sincroniza o estado de caixas e quantidades de acordo com a nuvem
+          savedState = data.savedState || {};
+
+          statusEl.innerText = "✓ Atualizado em tempo real";
+          render();
+        }
+      } catch (err) {
+        statusEl.innerText = "⚠ Erro de conexão";
+      }
+    }
+
+    /**
+     * Implementação do Padrão Debounce:
+     * Retarda o disparo do envio HTTP enquanto o usuário estiver digitando consecutivamente.
+     */
+    function triggerSync() {
+      const statusEl = document.getElementById("syncStatus");
+      statusEl.innerText = "Aguardando término da digitação...";
+      
+      // Reinicia o temporizador a cada caractere inserido
+      clearTimeout(syncTimer);
+      syncTimer = setTimeout(() => {
+        syncToCloud("SAVE");
+      }, 800); // Aguarda 800ms de inatividade do teclado
+    }
+
+    /**
+     * Envia o estado atual via requisição HTTP POST para o Apps Script
+     * @param {string} actionType "SAVE" para persistir ou "RESET" para zerar a compra
+     */
+    function syncToCloud(actionType = "SAVE") {
+      const statusEl = document.getElementById("syncStatus");
+      statusEl.innerText = "Salvando na nuvem...";
+      isSaving = true;
+
+      const bodyData = actionType === "RESET" 
+        ? { action: "RESET" } 
+        : { action: "SAVE", savedState: savedState, extraItems: extraItems };
+
+      fetch(API_URL, {
+        method: "POST",
+        mode: "no-cors", // Requisito para requisições cross-origin com Apps Script sem pre-flight CORS complexo
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(bodyData)
+      })
+      .then(() => {
+        statusEl.innerText = "✓ Salvo na nuvem";
+        setTimeout(() => { 
+          isSaving = false;
+          // Executa releitura assim que a gravação é concluída para sincronizar a sessão
+          loadData();
+        }, 1200);
+      })
+      .catch(err => {
+        statusEl.innerText = "⚠ Erro ao salvar na nuvem";
+        isSaving = false;
+      });
+    }
+
+    /* ==========================================================================
+       5. MANIPULADORES DE EVENTOS E LÓGICA DE NEGÓCIO
+       ========================================================================== */
+
+    /**
+     * Adiciona um insumo pontual à lista sob a categoria "(Adicionados à mão)"
+     */
+    function addExtraItem(e) {
+      e.preventDefault();
+      const input = document.getElementById("extraItemInput");
+      const name = input.value.trim();
+      
+      if (!name) return;
+
+      // Validação de redundância
+      const exists = rawData.some(i => i.name.toLowerCase() === name.toLowerCase()) || 
+                     extraItems.some(i => i.name.toLowerCase() === name.toLowerCase());
+
+      if (!exists) {
+        const newExtra = {
+          name: name,
+          category: "(Adicionados à mão)",
+          price: "",
+          isExtra: true
+        };
+        
+        extraItems.unshift(newExtra);
+        savedState[name] = { qty: "1", done: false }; // Inicializa com quantidade padrão
+
+        render();
+        syncToCloud("SAVE");
+      }
+      
+      input.value = "";
+    }
+
+    /**
+     * Handler do evento de alteração de quantidade no Input
+     */
+    function updateQty(itemName, val) {
+      if (!savedState[itemName]) savedState[itemName] = { qty: "", done: false };
+      savedState[itemName].qty = val;
+      
+      // Se a quantidade for esvaziada, reseta a seleção do checkbox
+      if (!val.trim()) {
+        savedState[itemName].done = false;
+      }
+
+      // Manipulação direta de classe CSS no DOM para performance (sem reconstrução inteira do componente)
+      const inputEl = document.getElementById(`qty-${slugify(itemName)}`);
+      if (inputEl) {
+        if (val.trim()) {
+          inputEl.classList.add("has-value");
+        } else {
+          inputEl.classList.remove("has-value");
+        }
+      }
+
+      triggerSync(); // Dispara o debounce
+    }
+
+    /**
+     * Handler do evento de clique na Checkbox (Comprado/Pendente)
+     */
+    function toggleDone(itemName) {
+      // Remove o foco de qualquer campo ativo para garantir a liberação da thread de sincronização
+      if (document.activeElement) {
+        document.activeElement.blur();
+      }
+
+      if (!savedState[itemName]) savedState[itemName] = { qty: "", done: false };
+      savedState[itemName].done = !savedState[itemName].done;
+      
+      render();
+      syncToCloud("SAVE");
+    }
+
+    /**
+     * Helper para sanitização de strings utilizadas em IDs HTML
+     */
+    function slugify(text) {
+      return text.toString().toLowerCase().replace(/\s+/g, '-').replace(/[^\w\-]+/g, '');
+    }
+
+    /* CONTROLES DE INTERFACE (TOGGLES) */
+    function toggleFilterToBuy() {
+      filterOnlyToBuy = !filterOnlyToBuy;
+      const btn = document.getElementById("btnFilterToBuy");
+      if (filterOnlyToBuy) {
+        btn.style.backgroundColor = "var(--primary-dark)";
+        btn.innerText = "Ver Todos os Itens";
+      } else {
+        btn.style.backgroundColor = "var(--secondary)";
+        btn.innerText = "Ver só o que comprar";
+      }
+      render();
+    }
+
+    function toggleHideCompleted() {
+      hideCompleted = !hideCompleted;
+      const btn = document.getElementById("btnHideCompleted");
+      if (hideCompleted) {
+        document.body.classList.add("hide-completed");
+        btn.innerText = "Mostrar Itens Marcados";
+      } else {
+        document.body.classList.remove("hide-completed");
+        btn.innerText = "Ocultar Itens Marcados";
+      }
+    }
+
+    function toggleViewMode() {
+      viewAlphabetical = !viewAlphabetical;
+      const btn = document.getElementById("btnToggleViewMode");
+      if (viewAlphabetical) {
+        btn.innerText = "Ver Separado por Categorias";
+      } else {
+        btn.innerText = "Ver em Ordem Alfabética";
+      }
+      render();
+    }
+
+    function resetAll() {
+      if (confirm("Deseja zerar todas as quantidades, marcações e itens extras para iniciar uma nova compra?")) {
+        savedState = {};
+        extraItems = [];
+        render();
+        syncToCloud("RESET");
+      }
+    }
+
+    /**
+     * Função utilitária de agrupamento via Array.prototype.reduce()
+     */
+    function groupByCategory(items) {
+      return items.reduce((acc, item) => {
+        (acc[item.category] = acc[item.category] || []).push(item);
+        return acc;
+      }, {});
+    }
+
+    /* ==========================================================================
+       6. MOTOR DE RENDERIZAÇÃO DO DOM (DOM RENDER ENGINE)
+       ========================================================================== */
+    function render() {
+      const container = document.getElementById("itemsContainer");
+      container.innerHTML = "";
+
+      const query = document.getElementById("searchInput").value.toLowerCase();
+      
+      // Concatena a lista de adicionados à mão no topo da coleção
+      const allItems = [...extraItems, ...rawData];
+
+      // Pipeline de filtragem (Busca + Filtro de compra ativa)
+      const filtered = allItems.filter(item => {
+        const itemState = savedState[item.name] || { qty: "", done: false };
+        const hasQty = itemState.qty && itemState.qty.trim() !== "";
+
+        const matchesQuery = item.name.toLowerCase().includes(query) || item.category.toLowerCase().includes(query);
+        const matchesToBuy = filterOnlyToBuy ? hasQty : true;
+
+        return matchesQuery && matchesToBuy;
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = `<div class="loading-msg">Nenhum insumo encontrado.</div>`;
+        return;
+      }
+
+      // RENDER MODO 1: ORDEM ALFABÉTICA ÚNICA
+      if (viewAlphabetical) {
+        filtered.sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+        
+        const cardDiv = document.createElement("div");
+        cardDiv.className = "category";
+        
+        filtered.forEach(item => {
+          renderRow(item, cardDiv);
+        });
+        
+        container.appendChild(cardDiv);
+      } 
+      // RENDER MODO 2: AGRUPADO POR CATEGORIA
+      else {
+        const grouped = groupByCategory(filtered);
+
+        for (const [catName, items] of Object.entries(grouped)) {
+          const catDiv = document.createElement("div");
+          catDiv.className = `category ${catName === '(Adicionados à mão)' ? 'extra-category' : ''}`;
+
+          const catTitle = document.createElement("div");
+          catTitle.className = "category-title";
+          catTitle.innerText = catName;
+          catDiv.appendChild(catTitle);
+
+          items.forEach(item => {
+            renderRow(item, catDiv);
+          });
+
+          container.appendChild(catDiv);
+        }
+      }
+    }
+
+    /**
+     * Constrói programmaticamente o elemento HTML de cada insumo via DOM API
+     * (Evita uso de innerHTML inline para prevenir falhas com aspas ou caracteres especiais no texto)
+     */
+    function renderRow(item, parentContainer) {
+      const itemState = savedState[item.name] || { qty: "", done: false };
+      const hasQty = itemState.qty && itemState.qty.trim() !== "";
+
+      const row = document.createElement("div");
+      row.className = `item-row ${hasQty ? 'has-qty' : ''} ${itemState.done ? 'completed' : ''}`;
+
+      const itemLeft = document.createElement("div");
+      itemLeft.className = "item-left";
+
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.className = "item-checkbox";
+      checkbox.checked = itemState.done;
+      checkbox.addEventListener("change", () => toggleDone(item.name));
+
+      const itemInfo = document.createElement("div");
+      itemInfo.className = "item-info";
+
+      const itemName = document.createElement("span");
+      itemName.className = "item-name";
+      itemName.textContent = item.name;
+
+      itemInfo.appendChild(itemName);
+
+      if (item.price) {
+        const itemPrice = document.createElement("span");
+        itemPrice.className = "item-price";
+        itemPrice.textContent = `Preço Médio: ${item.price}`;
+        itemInfo.appendChild(itemPrice);
+      }
+
+      itemLeft.appendChild(checkbox);
+      itemLeft.appendChild(itemInfo);
+
+      const inputQty = document.createElement("input");
+      inputQty.type = "text";
+      inputQty.id = `qty-${slugify(item.name)}`;
+      inputQty.className = `item-input ${hasQty ? 'has-value' : ''}`;
+      inputQty.placeholder = "Qtd...";
+      inputQty.value = itemState.qty;
+      inputQty.addEventListener("input", (e) => updateQty(item.name, e.target.value));
+
+      row.appendChild(inputQty);
+      row.appendChild(itemLeft);
+
+      parentContainer.appendChild(row);
+    }
+
+    /* ==========================================================================
+       7. INICIALIZAÇÃO DA APLICAÇÃO E POLLING LOOP
+       ========================================================================== */
+    // Executa a primeira carga assim que o DOM está pronto
+    loadData();
+
+    // Loop de Polling: Consulta a nuvem a cada 5000ms para manter os dispositivos emparelhados
+    setInterval(loadData, 5000);
+  </script>
+</body>
+</html>
