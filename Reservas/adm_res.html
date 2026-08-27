@@ -1,1 +1,296 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Painel de Reservas - ADM Riso</title>
+  
+  <!-- ESTILOS CSS DO PAINEL ADMINISTRATIVO -->
+  <style>
+    /* 1. VARIÁVEIS DE DESIGN E PALETA DE CORES */
+    :root {
+      --bg: #f8fafc;            /* Fundo suave (cinza claro) */
+      --card-bg: #ffffff;       /* Fundo dos cartões e tabelas */
+      --text: #0f172a;          /* Cor dos textos principais */
+      --primary: #2563eb;       /* Azul primário dos botões de ação */
+      --border: #cbd5e1;        /* Cor das bordas das tabelas e cards */
+      --muted: #64748b;         /* Texto secundário */
+      --danger: #ef4444;        /* Vermelho para avisos e bloqueios */
+      --success: #10b981;       /* Verde para indicadores de vagas abertas */
+    }
 
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 16px;
+      max-width: 900px; /* Largura expandida para melhor visualização em desktops/tablets */
+      margin-left: auto;
+      margin-right: auto;
+      padding-bottom: 40px;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 12px;
+    }
+
+    h1 {
+      font-size: 1.4rem;
+      margin: 0;
+    }
+
+    /* 2. BARRA DE FILTRO POR DATA */
+    .filter-card {
+      background: var(--card-bg);
+      padding: 16px;
+      border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .filter-card label {
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+
+    .filter-card input[type="date"] {
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.95rem;
+    }
+
+    /* 3. PAINEL RESUMO DE LOTAÇÃO DOS SLOTS DE HORÁRIO */
+    .slots-summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .slot-card {
+      background: var(--card-bg);
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      text-align: center;
+    }
+
+    .slot-card .time {
+      font-weight: 700;
+      font-size: 1.1rem;
+      margin-bottom: 4px;
+    }
+
+    .slot-card .capacity {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--muted);
+    }
+
+    .slot-card.full {
+      border-color: var(--danger);
+      background-color: #fef2f2;
+    }
+
+    .slot-card.full .capacity {
+      color: var(--danger);
+    }
+
+    /* 4. TABELA DA FICHA DO DIA (LISTA DE RESERVAS) */
+    .table-container {
+      background: var(--card-bg);
+      border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      overflow-x: auto; /* Permite rolagem lateral em telas menores */
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.88rem;
+    }
+
+    th, td {
+      padding: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      background-color: #f1f5f9;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    .badge-code {
+      background-color: #e0f2fe;
+      color: #0369a1;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-weight: 700;
+      font-family: monospace;
+    }
+
+    .loading-overlay {
+      text-align: center;
+      padding: 20px;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- CABEÇALHO DO PAINEL -->
+  <div class="header">
+    <h1>📅 Reservas Riso - Painel ADM</h1>
+    <a href="../res_index.html" style="font-size: 0.85rem; color: var(--primary); text-decoration: none;">← Ir para o site do cliente</a>
+  </div>
+
+  <!-- BARRA DE FILTRO POR DATA -->
+  <div class="filter-card">
+    <label for="dataConsulta">Selecionar data de serviço:</label>
+    <input type="date" id="dataConsulta" onchange="carregarPainelADM()">
+  </div>
+
+  <!-- PAINEL DE METRICAS/LOTAÇÃO DOS SLOTS -->
+  <div class="slots-summary-grid" id="slotsSummary">
+    <div class="loading-overlay" style="grid-column: 1/-1;">Selecione uma data para carregar os horários.</div>
+  </div>
+
+  <!-- TABELA COM A FICHA COMPLETA DO DIA -->
+  <div class="table-container">
+    <table id="tabelaReservas">
+      <thead>
+        <tr>
+          <th>Código</th>
+          <th>Horário</th>
+          <th>Cliente</th>
+          <th>Telefone</th>
+          <th>Pessoas</th>
+          <th>Observações / Alergias</th>
+        </tr>
+      </thead>
+      <tbody id="corpoTabela">
+        <tr>
+          <td colspan="6" class="loading-overlay">Nenhuma data selecionada.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- JAVASCRIPT DE INTEGRAÇÃO DO ADM -->
+  <script>
+    // Endpoint da API no Google Apps Script
+    const API_URL = "https://script.google.com/macros/s/AKfycbyOyPr6hWM80KTGIhsrML7wWX1qxhGDW96j-uFNJqX-MmLcD-uiTLTojW5kkFdK870L/exec";
+
+    // Inicializa a data do filtro com o dia de hoje por padrão
+    const inputData = document.getElementById("dataConsulta");
+    const hoje = new Date().toISOString().split("T")[0];
+    inputData.value = hoje;
+
+    // Executa a primeira busca ao abrir a página
+    carregarPainelADM();
+
+    /**
+     * Requisita e processa os dados do dia selecionado
+     */
+    async function carregarPainelADM() {
+      const dataVal = inputData.value;
+      const summaryContainer = document.getElementById("slotsSummary");
+      const corpoTabela = document.getElementById("corpoTabela");
+
+      if (!dataVal) return;
+
+      summaryContainer.innerHTML = `<div class="loading-overlay" style="grid-column: 1/-1;">Carregando resumo do dia...</div>`;
+      corpoTabela.innerHTML = `<tr><td colspan="6" class="loading-overlay">Buscando reservas...</td></tr>`;
+
+      try {
+        const response = await fetch(`${API_URL}?data=${dataVal}`);
+        const result = await response.json();
+
+        if (result.status === "success") {
+          renderSlotsSummary(result.disponibilidade);
+          carregarTabelaClientes(dataVal);
+        } else {
+          summaryContainer.innerHTML = `<div class="loading-overlay" style="color:var(--danger); grid-column: 1/-1;">Erro ao carregar dados.</div>`;
+        }
+      } catch (err) {
+        summaryContainer.innerHTML = `<div class="loading-overlay" style="color:var(--danger); grid-column: 1/-1;">Erro de conexão com o servidor.</div>`;
+      }
+    }
+
+    /**
+     * Renderiza os cards de lotação por horário (12h às 16h)
+     */
+    function renderSlotsSummary(disponibilidade) {
+      const summaryContainer = document.getElementById("slotsSummary");
+      summaryContainer.innerHTML = "";
+
+      Object.keys(disponibilidade).forEach(horario => {
+        const info = disponibilidade[horario];
+        const card = document.createElement("div");
+        
+        const ehLotado = info.disponiveis <= 0;
+        card.className = `slot-card ${ehLotado ? 'full' : ''}`;
+
+        card.innerHTML = `
+          <div class="time">${horario}</div>
+          <div class="capacity">${info.ocupadas}/8 pessoas</div>
+        `;
+
+        summaryContainer.appendChild(card);
+      });
+    }
+
+    /**
+     * Busca a lista detalhada de clientes salvos na planilha para a data
+     */
+    async function carregarTabelaClientes(dataVal) {
+      const corpoTabela = document.getElementById("corpoTabela");
+
+      try {
+        // Chamada enviando o parâmetro de ação ADM
+        const response = await fetch(`${API_URL}?data=${dataVal}&action=getReservasData`);
+        const result = await response.json();
+
+        corpoTabela.innerHTML = "";
+
+        if (result.reservas && result.reservas.length > 0) {
+          result.reservas.forEach(res => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+              <td><span class="badge-code">${res.codigo}</span></td>
+              <td><strong>${res.horario}</strong></td>
+              <td>${res.nome}</td>
+              <td><a href="https://wa.me/55${res.telefone.replace(/\D/g,'')}" target="_blank" style="color:var(--primary);">${res.telefone}</a></td>
+              <td><strong>${res.pessoas} p</strong></td>
+              <td>${res.observacoes}</td>
+            `;
+            corpoTabela.appendChild(tr);
+          });
+        } else {
+          corpoTabela.innerHTML = `<tr><td colspan="6" class="loading-overlay">Nenhuma reserva encontrada para esta data.</td></tr>`;
+        }
+      } catch (err) {
+        corpoTabela.innerHTML = `<tr><td colspan="6" class="loading-overlay" style="color:var(--danger);">Erro ao carregar lista de clientes.</td></tr>`;
+      }
+    }
+  </script>
+</body>
+</html>
