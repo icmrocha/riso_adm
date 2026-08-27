@@ -331,7 +331,7 @@
 
       <div class="form-group">
         <label for="especialObs">Precisa de algo especial? Nos conte aqui! (opcional)</label>
-        <textarea id="especialObs" rows="4" placeholder="• sua reserva celebra alguma ocasião especial? (aniversario, jantar romantico, etc)&#10;• possui alguma alergia, intolerância ou algo que não consuma de jeito nenhum?"></textarea>
+        <textarea id="especialObs" rows="4" placeholder="• Sua reserva celebra alguma ocasião especial?&#10;• Possui alguma alergia, intolerância ou algo que não consuma de jeito nenhum?&#10;• A reserva inclui crianças?"></textarea>
       </div>
 
       <button type="submit" class="btn-submit" id="btnSubmit" disabled>Reservar</button>
@@ -475,7 +475,6 @@
         } else {
           peloMenosUmDisponivel = true;
           btn.className = "slot-btn";
-          // Exibe apenas a hora para os horários disponíveis
           btn.innerHTML = `<span>${horario}</span>`;
           btn.onclick = () => selectSlot(horario, btn);
         }
