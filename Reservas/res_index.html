@@ -32,7 +32,7 @@
       color: var(--text);
       margin: 0;
       padding: 16px;
-      max-width: 550px; /* Largura máxima otimizada para navegação via celular */
+      max-width: 550px;
       margin-left: auto;
       margin-right: auto;
       padding-bottom: 40px;
@@ -72,7 +72,6 @@
       margin-bottom: 16px;
     }
 
-    /* Estilização da lista de avisos operacionais */
     .bullets-list {
       list-style: none;
       padding: 0;
@@ -88,7 +87,6 @@
       position: relative;
     }
 
-    /* Marcador em formato de ponto estilizado em azul */
     .bullets-list li::before {
       content: "•";
       position: absolute;
@@ -98,7 +96,6 @@
       font-size: 1.2rem;
     }
 
-    /* Botão verde do WhatsApp para reservas de grupos grandes */
     .btn-whatsapp {
       display: inline-block;
       margin-top: 6px;
@@ -131,7 +128,6 @@
       color: var(--text);
     }
 
-    /* Campos de texto, data, dropdown e textarea */
     input[type="text"],
     input[type="tel"],
     input[type="date"],
@@ -154,7 +150,7 @@
     /* 6. GRID DE BOTÕES DOS HORÁRIOS (SLOTS) */
     .slots-grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr); /* 3 colunas de tamanhos iguais */
+      grid-template-columns: repeat(3, 1fr);
       gap: 8px;
       margin-top: 6px;
     }
@@ -176,20 +172,17 @@
       gap: 2px;
     }
 
-    /* Subtexto explicativo dentro do botão (ex: Sem vaga) */
     .slot-btn .slot-subtext {
       font-size: 0.62rem;
       font-weight: 600;
     }
 
-    /* Estado quando o cliente clica e seleciona um horário */
     .slot-btn.selected {
       background-color: var(--primary);
       color: white;
       border-color: var(--primary);
     }
 
-    /* Estado esmaecido quando o horário está lotado ou não comporta a quantidade de pessoas */
     .slot-btn.disabled {
       background-color: var(--disabled-bg);
       color: var(--disabled-text);
@@ -199,7 +192,7 @@
     }
 
     .slot-btn.disabled .slot-subtext {
-      color: #ef4444; /* Vermelho para avisos de indisponibilidade */
+      color: #ef4444;
     }
 
     .helper-text {
@@ -208,7 +201,6 @@
       margin-top: 6px;
     }
 
-    /* Botão de envio final */
     .btn-submit {
       width: 100%;
       padding: 14px;
@@ -227,7 +219,7 @@
       cursor: not-allowed;
     }
 
-    /* 7. CARTÃO DE COMPROVANTE DIGITAL (RESERVA CONFIRMADA) */
+    /* 7. CARTÃO DE COMPROVANTE DIGITAL */
     .voucher-card {
       background: var(--card-bg);
       border-radius: 12px;
@@ -235,7 +227,7 @@
       text-align: center;
       box-shadow: 0 4px 6px rgba(0,0,0,0.05);
       border-top: 6px solid var(--success);
-      display: none; /* Inicia oculto e é exibido via JavaScript após a confirmação */
+      display: none;
     }
 
     .voucher-title {
@@ -245,7 +237,6 @@
       margin-bottom: 8px;
     }
 
-    /* Destaque visual do código único (#RISO-XXXX) */
     .voucher-code {
       font-size: 1.5rem;
       font-weight: 800;
@@ -268,7 +259,6 @@
       line-height: 1.6;
     }
 
-    /* Indicadores visuais de carregamento */
     .loading-overlay {
       text-align: center;
       font-size: 0.85rem;
@@ -292,7 +282,6 @@
       Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.
     </div>
 
-    <!-- LISTA DE BULLETS INFORMATIVOS -->
     <ul class="bullets-list">
       <li>Utilize o formulário abaixo para realizar sua reserva</li>
       <li>Funcionamos aos Sábados e Domingos, de meio-dia às 17h</li>
@@ -316,7 +305,7 @@
         <input type="text" id="nome" required placeholder="Seu nome completo">
       </div>
 
-      <!-- TELEFONE / WHATSAPP COM MÁSCARA DINÂMICA -->
+      <!-- TELEFONE / WHATSAPP -->
       <div class="form-group">
         <label for="telefone">Telefone:</label>
         <input type="tel" id="telefone" required placeholder="(24) 99999-9999" maxlength="15" oninput="mascaraTelefone(this)">
@@ -328,7 +317,7 @@
         <input type="date" id="dataReserva" required onchange="consultarDisponibilidade()">
       </div>
 
-      <!-- SELETOR DE PESSOAS SEM SELEÇÃO AUTOMÁTICA -->
+      <!-- SELETOR DE PESSOAS (EXIGE ESCOLHA EXPLÍCITA DO CLIENTE) -->
       <div class="form-group">
         <label for="pessoas">Quantidade de pessoas na reserva:</label>
         <select id="pessoas" required disabled onchange="atualizarLotacaoSlots()">
@@ -372,7 +361,6 @@
     <div>Apresente este código ou informe seu nome na chegada:</div>
     <div class="voucher-code" id="resCodigo">#RISO-XXXX</div>
 
-    <!-- DETALHES COMPROVADOS DA RESERVA -->
     <div class="voucher-details">
       <div><strong>Nome:</strong> <span id="resNome"></span></div>
       <div><strong>Data:</strong> <span id="resData"></span></div>
@@ -384,21 +372,15 @@
 
   <!-- SCRIPTS E LÓGICA DE INTEGRAÇÃO (FRONTEND + APPS SCRIPT) -->
   <script>
-    // 1. ENDPOINT DA API DO GOOGLE APPS SCRIPT
     const API_URL = "https://script.google.com/macros/s/AKfycbyOyPr6hWM80KTGIhsrML7wWX1qxhGDW96j-uFNJqX-MmLcD-uiTLTojW5kkFdK870L/exec";
 
-    // Variáveis globais de controle de estado
     let selectedHorario = null;
     let vagasDoDia = null;
 
-    // Trava o calendário para não permitir seleção de datas retroativas (passadas)
     const inputData = document.getElementById("dataReserva");
     const hoje = new Date().toISOString().split("T")[0];
     inputData.min = hoje;
 
-    /**
-     * MÁSCARA AUTOMÁTICA DE TELEFONE LOCAL PT-BR (XX) XXXXX-XXXX
-     */
     function mascaraTelefone(input) {
       let v = input.value.replace(/\D/g, "");
       if (v.length > 11) v = v.substring(0, 11);
@@ -415,9 +397,6 @@
       input.value = v;
     }
 
-    /**
-     * 2. CONSULTA AS VAGAS NA PLANILHA GOOGLE VIA APPS SCRIPT
-     */
     async function consultarDisponibilidade() {
       const dataVal = inputData.value;
       const slotsContainer = document.getElementById("slotsContainer");
@@ -433,7 +412,7 @@
       selectedHorario = null;
       document.getElementById("btnSubmit").disabled = true;
 
-      // Reseta e habilita o dropdown de pessoas forçando nova escolha
+      // Reseta o seletor exigindo que o usuário escolha o número de pessoas
       selectPessoas.disabled = false;
       selectPessoas.value = "";
 
@@ -445,7 +424,7 @@
 
         if (result.status === "success") {
           vagasDoDia = result.disponibilidade;
-          slotsContainer.innerHTML = `<div class="helper-text" style="grid-column: span 3;">Aguardando você selecionar a quantidade de pessoas...</div>`;
+          slotsContainer.innerHTML = `<div class="helper-text" style="grid-column: span 3;">Aguardando você selecionar a quantidade de pessoas acima...</div>`;
         } else {
           slotsContainer.innerHTML = `<div class="helper-text" style="color:#ef4444; grid-column: span 3;">Erro ao carregar horários. Tente novamente.</div>`;
         }
@@ -455,9 +434,6 @@
       }
     }
 
-    /**
-     * 3. REATOR DE UX: ATUALIZA OS BOTÕES COM BASE NA QUANTIDADE DE PESSOAS
-     */
     function atualizarLotacaoSlots() {
       if (!vagasDoDia) return;
 
@@ -510,9 +486,6 @@
       }
     }
 
-    /**
-     * 4. SELEÇÃO DO SLOT DE HORÁRIO
-     */
     function selectSlot(horario, element) {
       document.querySelectorAll(".slot-btn").forEach(b => b.classList.remove("selected"));
       element.classList.add("selected");
@@ -520,9 +493,6 @@
       document.getElementById("btnSubmit").disabled = false;
     }
 
-    /**
-     * 5. ENVIO DA RESERVA
-     */
     async function submitReservation(e) {
       e.preventDefault();
 
@@ -571,7 +541,7 @@
 
           document.getElementById("voucherCard").style.display = "block";
         } else {
-          // Exibe a mensagem de erro vinda do backend caso a lotação tenha estourado
+          // Exibe o alerta emitido pelo servidor caso tente estourar o limite de 8 pessoas
           alert(result.message || "Ocorreu um erro ao salvar sua reserva. Tente novamente.");
           btnSubmit.disabled = false;
         }
