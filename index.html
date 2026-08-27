@@ -1,1 +1,153 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Portal Operacional - Riso</title>
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text: #0f172a;
+      --primary: #2563eb;
+      --success: #10b981;
+      --border: #e2e8f0;
+      --muted: #64748b;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 16px;
+      max-width: 500px;
+      margin-left: auto;
+      margin-right: auto;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .header-logo {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .logo {
+      max-width: 160px;
+      height: auto;
+    }
+
+    h1 {
+      font-size: 1.3rem;
+      text-align: center;
+      margin: 0 0 8px 0;
+      color: var(--text);
+    }
+
+    p.subtitle {
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin: 0 0 24px 0;
+    }
+
+    .app-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .app-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 20px;
+      text-decoration: none;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+      transition: transform 0.1s ease, box-shadow 0.1s ease;
+      border-left: 6px solid var(--primary);
+    }
+
+    .app-card:active {
+      transform: scale(0.98);
+    }
+
+    .app-card.compras {
+      border-left-color: var(--success);
+    }
+
+    .app-info {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .app-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+    }
+
+    .app-desc {
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    .arrow-icon {
+      font-size: 1.2rem;
+      color: var(--muted);
+      font-weight: bold;
+    }
+
+    .footer-text {
+      text-align: center;
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-top: 32px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header-logo">
+    <img src="logo.png" alt="Logo RISO" class="logo">
+  </div>
+
+  <h1>Portal Operacional</h1>
+  <p class="subtitle">Selecione o aplicativo para iniciar</p>
+
+  <div class="app-grid">
+    <!-- LINK PARA O CHECKLIST OPERACIONAL -->
+    <a href="./checklist/" class="app-card">
+      <div class="app-info">
+        <span class="app-title">Checklist Operacional</span>
+        <span class="app-desc">Rotina de serviço, abertura e fechamento</span>
+      </div>
+      <span class="arrow-icon">→</span>
+    </a>
+
+    <!-- LINK PARA A LISTA DE COMPRAS -->
+    <a href="./compras/" class="app-card compras">
+      <div class="app-info">
+        <span class="app-title">Lista de Compras</span>
+        <span class="app-desc">Controle de insumos e compras em tempo real</span>
+      </div>
+      <span class="arrow-icon">→</span>
+    </a>
+  </div>
+
+  <div class="footer-text">
+    Riso Bistro &bull; Sistema Operacional
+  </div>
+
+</body>
+</html>
 
