@@ -315,10 +315,10 @@
         <input type="text" id="nome" required placeholder="Seu nome completo">
       </div>
 
-      <!-- TELEFONE / WHATSAPP -->
+      <!-- TELEFONE / WHATSAPP COM MÁSCARA AUTOMÁTICA -->
       <div class="form-group">
         <label for="telefone">Telefone:</label>
-        <input type="tel" id="telefone" required placeholder="(24) 99999-9999">
+        <input type="tel" id="telefone" required placeholder="(24) 99999-9999" maxlength="15" oninput="mascaraTelefone(this)">
       </div>
 
       <!-- CALENDÁRIO INTERATIVO -->
@@ -327,7 +327,7 @@
         <input type="date" id="dataReserva" required onchange="consultarDisponibilidade()">
       </div>
 
-      <!-- SELETOR DE PESSOAS (POSICIONADO ANTES DOS HORÁRIOS PARA FILTRAGEM DINÂMICA) -->
+      <!-- SELETOR DE PESSOAS -->
       <div class="form-group">
         <label for="pessoas">Quantidade de pessoas na reserva:</label>
         <select id="pessoas" required onchange="atualizarLotacaoSlots()">
@@ -358,13 +358,13 @@
         <textarea id="especialObs" rows="4" placeholder="• sua reserva celebra alguma ocasião especial? (aniversario, jantar romantico, etc)&#10;• possui alguma alergia, intolerância ou algo que não consuma de jeito nenhum?"></textarea>
       </div>
 
-      <!-- BOTÃO DE AÇÃO -->
+      <!-- BOTÃO DE AÇÃO COM MENSAGEM ATUALIZADA -->
       <button type="submit" class="btn-submit" id="btnSubmit" disabled>Reservar</button>
-      <div class="loading-overlay" id="loadingSubmit">Processando sua reserva na nuvem...</div>
+      <div class="loading-overlay" id="loadingSubmit">Processando a sua reserva...</div>
     </form>
   </div>
 
-  <!-- SEÇÃO DO COMPROVANTE DIGITAL (EXIBIDA APÓS O PROCESSAMENTO COM SUCESSO) -->
+  <!-- SEÇÃO DO COMPROVANTE DIGITAL -->
   <div class="voucher-card" id="voucherCard">
     <div class="voucher-title">✓ Reserva Confirmada!</div>
     <div>Apresente este código ou informe seu nome na chegada:</div>
@@ -382,21 +382,38 @@
 
   <!-- SCRIPTS E LÓGICA DE INTEGRAÇÃO (FRONTEND + APPS SCRIPT) -->
   <script>
-    // 1. ENDPOINT DA API DO GOOGLE APPS SCRIPT
     const API_URL = "https://script.google.com/macros/s/AKfycbyOyPr6hWM80KTGIhsrML7wWX1qxhGDW96j-uFNJqX-MmLcD-uiTLTojW5kkFdK870L/exec";
 
-    // Variáveis globais de controle de estado
     let selectedHorario = null;
     let vagasDoDia = null;
 
-    // Trava o calendário para não permitir seleção de datas retroativas (passadas)
     const inputData = document.getElementById("dataReserva");
     const hoje = new Date().toISOString().split("T")[0];
     inputData.min = hoje;
 
     /**
-     * 2. CONSULTA AS VAGAS NA PLANILHA GOOGLE VIA APPS SCRIPT
-     * É executada sempre que o cliente escolhe uma data no calendário.
+     * MÁSCARA AUTOMÁTICA DE TELEFONE LOCAL PT-BR (DD) XXXXX-XXXX
+     */
+    function mascaraTelefone(input) {
+      let v = input.value.replace(/\D/g, ""); // Remove tudo que não é dígito
+      if (v.length > 11) v = v.substring(0, 11); // Limita a 11 dígitos
+
+      if (v.length > 10) {
+        // Celular com 9 dígitos: (XX) XXXXX-XXXX
+        v = v.replace(/^(\d{2})(\d{5})(\d{4})$/, "($1) $2-$3");
+      } else if (v.length > 6) {
+        // Formatação intermediária durante a digitação
+        v = v.replace(/^(\d{2})(\d{4,5})(\d{0,4})$/, "($1) $2-$3");
+      } else if (v.length > 2) {
+        v = v.replace(/^(\d{2})(\d{0,5})$/, "($1) $2");
+      } else if (v.length > 0) {
+        v = v.replace(/^(\d*)$/, "($1");
+      }
+      input.value = v;
+    }
+
+    /**
+     * CONSULTA VAGAS
      */
     async function consultarDisponibilidade() {
       const dataVal = inputData.value;
@@ -406,7 +423,6 @@
 
       if (!dataVal) return;
 
-      // Reseta a interface enquanto carrega
       slotsContainer.innerHTML = "";
       helper.style.display = "none";
       loading.style.display = "block";
@@ -414,7 +430,6 @@
       document.getElementById("btnSubmit").disabled = true;
 
       try {
-        // Faz requisição HTTP GET para o Apps Script
         const response = await fetch(`${API_URL}?data=${dataVal}`);
         const result = await response.json();
 
@@ -422,7 +437,7 @@
 
         if (result.status === "success") {
           vagasDoDia = result.disponibilidade;
-          atualizarLotacaoSlots(); // Atualiza os botões na tela
+          atualizarLotacaoSlots();
         } else {
           slotsContainer.innerHTML = `<div class="helper-text" style="color:#ef4444; grid-column: span 3;">Erro ao carregar horários. Tente novamente.</div>`;
         }
@@ -433,8 +448,7 @@
     }
 
     /**
-     * 3. REATOR DE UX: ATUALIZA OS BOTÕES COM BASE NA QUANTIDADE DE PESSOAS
-     * Reavalia os horários (12h às 16h) e esmaece os que não comportam o grupo.
+     * ATUALIZA BOTOEIRA
      */
     function atualizarLotacaoSlots() {
       if (!vagasDoDia) return;
@@ -449,24 +463,19 @@
 
       let peloMenosUmDisponivel = false;
 
-      // Percorre os slots configurados (12:00, 13:00, 14:00, 15:00, 16:00)
       Object.keys(vagasDoDia).forEach(horario => {
         const info = vagasDoDia[horario];
         const btn = document.createElement("button");
         btn.type = "button";
         
-        // Regra de validação: verifica se o saldo de vagas comporta a quantidade de pessoas desejada
         const comportaPessoas = info.disponiveis >= numPessoas;
 
         if (!comportaPessoas || info.esmaecer) {
-          // Caso não haja vaga suficiente, aplica estado desabilitado/esmaecido
           btn.className = "slot-btn disabled";
-          
           let subtexto = info.disponiveis <= 0 ? "Esgotado" : `Sem vaga p/ ${numPessoas}p`;
           btn.innerHTML = `<span>${horario}</span><span class="slot-subtext">${subtexto}</span>`;
           btn.disabled = true;
         } else {
-          // Caso haja vagas, exibe o botão ativo e clicável
           peloMenosUmDisponivel = true;
           btn.className = "slot-btn";
           btn.innerHTML = `<span>${horario}</span>`;
@@ -476,7 +485,6 @@
         slotsContainer.appendChild(btn);
       });
 
-      // Exibe a mensagem de orientação atualizada com o número exato de pessoas
       helper.style.display = "block";
       if (peloMenosUmDisponivel) {
         helper.style.color = "var(--primary)";
@@ -487,25 +495,18 @@
       }
     }
 
-    /**
-     * 4. SELEÇÃO DO SLOT DE HORÁRIO
-     */
     function selectSlot(horario, element) {
-      // Remove a classe de seleção dos demais botões e aplica no clicado
       document.querySelectorAll(".slot-btn").forEach(b => b.classList.remove("selected"));
       element.classList.add("selected");
       selectedHorario = horario;
-      
-      // Libera o botão de envio
       document.getElementById("btnSubmit").disabled = false;
     }
 
     /**
-     * 5. ENVIO DA RESERVA PARA O GOOGLE SHEETS & N8N
-     * Grava os dados na planilha, gera o comprovante e dispara os alertas.
+     * ENVIO DA RESERVA
      */
     async function submitReservation(e) {
-      e.preventDefault(); // Impede o recarregamento padrão do formulário HTML
+      e.preventDefault();
 
       if (!selectedHorario) return;
 
@@ -517,7 +518,6 @@
 
       const obsVal = document.getElementById("especialObs").value.trim();
 
-      // Monta o objeto com as informações preenchidas
       const payload = {
         nome: document.getElementById("nome").value.trim(),
         telefone: document.getElementById("telefone").value.trim(),
@@ -528,7 +528,6 @@
       };
 
       try {
-        // AJUSTE CRÍTICO DE CORS: Usa Content-Type text/plain para evitar bloqueios do navegador ao enviar dados para o Apps Script
         const response = await fetch(API_URL, {
           method: "POST",
           headers: { "Content-Type": "text/plain;charset=utf-8" },
@@ -539,13 +538,16 @@
         loadingSubmit.style.display = "none";
 
         if (result.status === "success") {
-          // Oculta as seções de entrada e exibe a tela de comprovante com o código retornado (#RISO-XXXX)
           document.getElementById("introSection").style.display = "none";
           document.getElementById("formContainer").style.display = "none";
 
+          // Formata a data para exibir bonito no comprovante
+          const p = payload.dataReserva.split("-");
+          const dataExibicao = `${p[2]}/${p[1]}/${p[0]}`;
+
           document.getElementById("resCodigo").innerText = result.codigoReserva;
           document.getElementById("resNome").innerText = payload.nome;
-          document.getElementById("resData").innerText = payload.dataReserva;
+          document.getElementById("resData").innerText = dataExibicao;
           document.getElementById("resHorario").innerText = payload.horario;
           document.getElementById("resPessoas").innerText = payload.pessoas;
           document.getElementById("resObs").innerText = payload.observacoes;
