@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Reservas - Riso</title>
   
-  <!-- ESTILOS CSS DA PÁGINA DE RESERVAS -->
   <style>
     :root {
       --bg: #f8fafc;
@@ -302,12 +301,12 @@
 
       <div class="form-group">
         <label for="dataReserva">Dia da Reserva:</label>
-        <input type="date" id="dataReserva" required onchange="consultarDisponibilidade()">
+        <input type="date" id="dataReserva" required onchange="aoSelecionarData()">
       </div>
 
       <div class="form-group">
         <label for="pessoas">Quantidade de pessoas na reserva:</label>
-        <select id="pessoas" required disabled onchange="atualizarLotacaoSlots()">
+        <select id="pessoas" required disabled onchange="aoSelecionarPessoas()">
           <option value="" disabled selected>Selecione a quantidade de pessoas</option>
           <option value="1">1 pessoa</option>
           <option value="2">2 pessoas</option>
@@ -380,23 +379,53 @@
       input.value = v;
     }
 
-    async function consultarDisponibilidade() {
+    // Ação acionada assim que uma data é escolhida
+    function aoSelecionarData() {
       const dataVal = inputData.value;
+      const selectPessoas = document.getElementById("pessoas");
+      const slotsContainer = document.getElementById("slotsContainer");
+      const helper = document.getElementById("slotsHelper");
+
+      if (!dataVal) return;
+
+      vagasDoDia = null;
+      selectedHorario = null;
+      document.getElementById("btnSubmit").disabled = true;
+      helper.style.display = "none";
+
+      // Habilita o select de pessoas e reseta a seleção
+      selectPessoas.disabled = false;
+      selectPessoas.value = "";
+
+      // Exibe a mensagem solicitada no grid de horários
+      slotsContainer.innerHTML = `<div class="helper-text" style="grid-column: span 3; font-weight: 500;">Para ver os horários disponíveis, indique a quantidade de pessoas.</div>`;
+    }
+
+    // Ação acionada quando a quantidade de pessoas é selecionada
+    async function aoSelecionarPessoas() {
+      const dataVal = inputData.value;
+      const numPessoasVal = document.getElementById("pessoas").value;
+
+      if (!dataVal || !numPessoasVal) return;
+
+      // Se já buscamos a disponibilidade para esta data, basta renderizar os botões
+      if (vagasDoDia) {
+        renderizarSlots();
+        return;
+      }
+
+      // Se ainda não buscamos para esta data, fazemos o fetch agora
+      await consultarDisponibilidadeServidor(dataVal);
+    }
+
+    async function consultarDisponibilidadeServidor(dataVal) {
       const slotsContainer = document.getElementById("slotsContainer");
       const loading = document.getElementById("loadingSlots");
       const helper = document.getElementById("slotsHelper");
-      const selectPessoas = document.getElementById("pessoas");
-
-      if (!dataVal) return;
 
       slotsContainer.innerHTML = "";
       helper.style.display = "none";
       loading.style.display = "block";
-      selectedHorario = null;
-      document.getElementById("btnSubmit").disabled = true;
-
-      selectPessoas.disabled = false;
-      selectPessoas.value = "";
 
       try {
         const response = await fetch(`${API_URL}?data=${dataVal}`);
@@ -406,7 +435,7 @@
 
         if (result.status === "success") {
           vagasDoDia = result.disponibilidade;
-          slotsContainer.innerHTML = `<div class="helper-text" style="grid-column: span 3;">Aguardando você selecionar a quantidade de pessoas acima...</div>`;
+          renderizarSlots();
         } else {
           slotsContainer.innerHTML = `<div class="helper-text" style="color:#ef4444; grid-column: span 3;">Erro ao carregar horários. Tente novamente.</div>`;
         }
@@ -416,7 +445,7 @@
       }
     }
 
-    function atualizarLotacaoSlots() {
+    function renderizarSlots() {
       if (!vagasDoDia) return;
 
       const numPessoasVal = document.getElementById("pessoas").value;
@@ -424,7 +453,7 @@
       const helper = document.getElementById("slotsHelper");
 
       if (!numPessoasVal) {
-        slotsContainer.innerHTML = `<div class="helper-text" style="grid-column: span 3;">Selecione a quantidade de pessoas acima.</div>`;
+        slotsContainer.innerHTML = `<div class="helper-text" style="grid-column: span 3; font-weight: 500;">Para ver os horários disponíveis, indique a quantidade de pessoas.</div>`;
         helper.style.display = "none";
         return;
       }
@@ -441,7 +470,6 @@
         const btn = document.createElement("button");
         btn.type = "button";
         
-        // Verifica rigorosamente se restam vagas suficientes para a quantidade de pessoas selecionadas
         const comportaPessoas = info.disponiveis >= numPessoas;
 
         if (!comportaPessoas || info.esmaecer) {
@@ -462,7 +490,7 @@
       helper.style.display = "block";
       if (peloMenosUmDisponivel) {
         helper.style.color = "var(--primary)";
-        helper.innerText = `Mostrando horários com vagas disponíveis para ${numPessoas} pessoas.`;
+        helper.innerText = `Mostrando horários com vagas disponíveis para ${numPessoas} pessoa(s).`;
       } else {
         helper.style.color = "#ef4444";
         helper.innerText = `⚠️ Nenhum horário possui ${numPessoas} vagas disponíveis nesta data. Tente alterar a quantidade de pessoas ou a data.`;
