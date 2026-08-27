@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Painel de Reservas </title>
+  <title>Painel de Reservas - ADM Riso</title>
   
   <!-- ESTILOS CSS DO PAINEL ADMINISTRATIVO -->
   <style>
@@ -41,7 +41,6 @@
       border-bottom: 2px solid var(--border);
       padding-bottom: 12px;
     }
-
 
     h1 {
       font-size: 1.4rem;
@@ -156,7 +155,6 @@
   </style>
 </head>
 <body>
-
 
   <!-- CABEÇALHO DO PAINEL -->
   <div class="header">
@@ -280,7 +278,7 @@
               <td><span class="badge-code">${res.codigo}</span></td>
               <td><strong>${res.horario}</strong></td>
               <td>${res.nome}</td>
-              <td><a href="https://wa.me/55${res.telefone.replace(/\D/g,'')}" target="_blank" style="color:var(--primary);">${res.telefone}</a></td>
+              <td><a href="https://wa.me/55${res.telefone.replace(/\D/g,'')}" target="_blank" style="color:var(--primary); font-weight: 600;">${res.telefone}</a></td>
               <td><strong>${res.pessoas} p</strong></td>
               <td>${res.observacoes}</td>
             `;
