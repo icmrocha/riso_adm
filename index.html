@@ -14,6 +14,7 @@
       --text: #0f172a;
       --primary: #2563eb;
       --success: #10b981;
+      --purple: #8b5cf6;
       --border: #e2e8f0;
       --muted: #64748b;
     }
@@ -90,6 +91,10 @@
       border-left-color: var(--success);
     }
 
+    .app-card.reservas {
+      border-left-color: var(--purple);
+    }
+
     .app-info {
       display: flex;
       flex-direction: column;
@@ -131,7 +136,7 @@
   <p class="subtitle">Selecione o aplicativo para iniciar</p>
 
   <div class="app-grid">
-    <!-- LINK PARA O CHECKLIST OPERACIONAL (DIRECIONA PARA SUBPASTA E ARQUIVO ESPECÍFICO) -->
+    <!-- LINK PARA O CHECKLIST OPERACIONAL -->
     <a href="./Checklist/chk_index.html" class="app-card">
       <div class="app-info">
         <span class="app-title">Checklist Operacional</span>
@@ -140,7 +145,7 @@
       <span class="arrow-icon">→</span>
     </a>
 
-    <!-- LINK PARA A LISTA DE COMPRAS (DIRECIONA PARA SUBPASTA E ARQUIVO ESPECÍFICO) -->
+    <!-- LINK PARA A LISTA DE COMPRAS -->
     <a href="./Compras/com_index.html" class="app-card compras">
       <div class="app-info">
         <span class="app-title">Lista de Compras</span>
@@ -148,10 +153,19 @@
       </div>
       <span class="arrow-icon">→</span>
     </a>
+
+    <!-- LINK PARA O PAINEL DE RESERVAS -->
+    <a href="https://adm.riso.art.br/Reservas/adm_res" class="app-card reservas">
+      <div class="app-info">
+        <span class="app-title">Painel de Reservas</span>
+        <span class="app-desc">Gestão de agenda, vagas e check-in de clientes</span>
+      </div>
+      <span class="arrow-icon">→</span>
+    </a>
   </div>
 
   <div class="footer-text">
-    <!-- sem texto por enquanto -->
+    Riso Bistro • Sistema Operacional
   </div>
 
 </body>
