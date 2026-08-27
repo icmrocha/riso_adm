@@ -303,7 +303,6 @@
         <br>
         <a href="https://wa.me/5524992438242" target="_blank" class="btn-whatsapp">Falar no WhatsApp</a>
       </li>
-      
     </ul>
   </div>
 
@@ -329,12 +328,13 @@
         <input type="date" id="dataReserva" required onchange="consultarDisponibilidade()">
       </div>
 
-      <!-- SELETOR DE PESSOAS -->
+      <!-- SELETOR DE PESSOAS SEM SELEÇÃO AUTOMÁTICA -->
       <div class="form-group">
         <label for="pessoas">Quantidade de pessoas na reserva:</label>
-        <select id="pessoas" required onchange="atualizarLotacaoSlots()">
+        <select id="pessoas" required disabled onchange="atualizarLotacaoSlots()">
+          <option value="" disabled selected>Selecione a quantidade de pessoas</option>
           <option value="1">1 pessoa</option>
-          <option value="2" selected>2 pessoas</option>
+          <option value="2">2 pessoas</option>
           <option value="3">3 pessoas</option>
           <option value="4">4 pessoas</option>
           <option value="5">5 pessoas</option>
@@ -360,7 +360,7 @@
         <textarea id="especialObs" rows="4" placeholder="• sua reserva celebra alguma ocasião especial? (aniversario, jantar romantico, etc)&#10;• possui alguma alergia, intolerância ou algo que não consuma de jeito nenhum?"></textarea>
       </div>
 
-      <!-- BOTÃO DE AÇÃO COM MENSAGEM DE PROCESSAMENTO AJUSTADA -->
+      <!-- BOTÃO DE AÇÃO -->
       <button type="submit" class="btn-submit" id="btnSubmit" disabled>Reservar</button>
       <div class="loading-overlay" id="loadingSubmit">Processando a sua reserva...</div>
     </form>
@@ -400,14 +400,12 @@
      * MÁSCARA AUTOMÁTICA DE TELEFONE LOCAL PT-BR (XX) XXXXX-XXXX
      */
     function mascaraTelefone(input) {
-      let v = input.value.replace(/\D/g, ""); // Remove caracteres não numéricos
-      if (v.length > 11) v = v.substring(0, 11); // Limita ao tamanho máximo com 9 dígitos
+      let v = input.value.replace(/\D/g, "");
+      if (v.length > 11) v = v.substring(0, 11);
 
       if (v.length > 10) {
-        // Celular com DDD + 9 dígitos: (XX) XXXXX-XXXX
         v = v.replace(/^(\d{2})(\d{5})(\d{4})$/, "($1) $2-$3");
       } else if (v.length > 6) {
-        // Formatação intermediária durante a digitação do número
         v = v.replace(/^(\d{2})(\d{4,5})(\d{0,4})$/, "($1) $2-$3");
       } else if (v.length > 2) {
         v = v.replace(/^(\d{2})(\d{0,5})$/, "($1) $2");
@@ -425,6 +423,7 @@
       const slotsContainer = document.getElementById("slotsContainer");
       const loading = document.getElementById("loadingSlots");
       const helper = document.getElementById("slotsHelper");
+      const selectPessoas = document.getElementById("pessoas");
 
       if (!dataVal) return;
 
@@ -434,6 +433,10 @@
       selectedHorario = null;
       document.getElementById("btnSubmit").disabled = true;
 
+      // Reseta e habilita o dropdown de pessoas forçando nova escolha
+      selectPessoas.disabled = false;
+      selectPessoas.value = "";
+
       try {
         const response = await fetch(`${API_URL}?data=${dataVal}`);
         const result = await response.json();
@@ -442,7 +445,7 @@
 
         if (result.status === "success") {
           vagasDoDia = result.disponibilidade;
-          atualizarLotacaoSlots();
+          slotsContainer.innerHTML = `<div class="helper-text" style="grid-column: span 3;">Aguardando você selecionar a quantidade de pessoas...</div>`;
         } else {
           slotsContainer.innerHTML = `<div class="helper-text" style="color:#ef4444; grid-column: span 3;">Erro ao carregar horários. Tente novamente.</div>`;
         }
@@ -458,10 +461,17 @@
     function atualizarLotacaoSlots() {
       if (!vagasDoDia) return;
 
-      const numPessoas = parseInt(document.getElementById("pessoas").value) || 1;
+      const numPessoasVal = document.getElementById("pessoas").value;
       const slotsContainer = document.getElementById("slotsContainer");
       const helper = document.getElementById("slotsHelper");
-      
+
+      if (!numPessoasVal) {
+        slotsContainer.innerHTML = `<div class="helper-text" style="grid-column: span 3;">Selecione a quantidade de pessoas acima.</div>`;
+        helper.style.display = "none";
+        return;
+      }
+
+      const numPessoas = parseInt(numPessoasVal);
       slotsContainer.innerHTML = "";
       selectedHorario = null;
       document.getElementById("btnSubmit").disabled = true;
@@ -549,7 +559,6 @@
           document.getElementById("introSection").style.display = "none";
           document.getElementById("formContainer").style.display = "none";
 
-          // Formata a data para apresentação no comprovante digital (DD/MM/YYYY)
           const p = payload.dataReserva.split("-");
           const dataExibicao = `${p[2]}/${p[1]}/${p[0]}`;
 
@@ -562,7 +571,8 @@
 
           document.getElementById("voucherCard").style.display = "block";
         } else {
-          alert("Ocorreu um erro ao salvar sua reserva. Tente novamente.");
+          // Exibe a mensagem de erro vinda do backend caso a lotação tenha estourado
+          alert(result.message || "Ocorreu um erro ao salvar sua reserva. Tente novamente.");
           btnSubmit.disabled = false;
         }
       } catch (err) {
