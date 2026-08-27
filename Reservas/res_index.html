@@ -180,7 +180,7 @@
       color: var(--disabled-text);
       border-color: #e2e8f0;
       cursor: not-allowed;
-      opacity: 0.55;
+      opacity: 0.5;
     }
 
     .slot-btn.disabled .slot-subtext {
@@ -441,17 +441,18 @@
         const btn = document.createElement("button");
         btn.type = "button";
         
+        // Verifica rigorosamente se restam vagas suficientes para a quantidade de pessoas selecionadas
         const comportaPessoas = info.disponiveis >= numPessoas;
 
         if (!comportaPessoas || info.esmaecer) {
           btn.className = "slot-btn disabled";
-          let subtexto = info.disponiveis <= 0 ? "Esgotado" : `Sem vaga p/ ${numPessoas}p`;
+          let subtexto = info.disponiveis <= 0 ? "Esgotado" : `Resta(m) ${info.disponiveis} vaga(s)`;
           btn.innerHTML = `<span>${horario}</span><span class="slot-subtext">${subtexto}</span>`;
           btn.disabled = true;
         } else {
           peloMenosUmDisponivel = true;
           btn.className = "slot-btn";
-          btn.innerHTML = `<span>${horario}</span>`;
+          btn.innerHTML = `<span>${horario}</span><span class="slot-subtext" style="color:#10b981;">${info.disponiveis} vaga(s)</span>`;
           btn.onclick = () => selectSlot(horario, btn);
         }
 
@@ -461,10 +462,10 @@
       helper.style.display = "block";
       if (peloMenosUmDisponivel) {
         helper.style.color = "var(--primary)";
-        helper.innerText = `Mostrando apenas horarios que possuem vagas disponíveis para ${numPessoas} pessoas.`;
+        helper.innerText = `Mostrando horários com vagas disponíveis para ${numPessoas} pessoas.`;
       } else {
         helper.style.color = "#ef4444";
-        helper.innerText = `⚠️ Nenhum horário disponível para ${numPessoas} pessoas nesta data. Tente alterar a quantidade de pessoas ou a data.`;
+        helper.innerText = `⚠️ Nenhum horário possui ${numPessoas} vagas disponíveis nesta data. Tente alterar a quantidade de pessoas ou a data.`;
       }
     }
 
