@@ -294,15 +294,14 @@
 
     <!-- LISTA DE BULLETS INFORMATIVOS -->
     <ul class="bullets-list">
-      <li>Utilize o formulário abaixo para realizar a sua reserva</li>
-      <li>Funcionamos aos Sábados e Domingos, de meio-dia às 17h</li>
-      <li>Em caso de chuva, sua reserva pode sofrer alterações</li>
-      <li>Em caso de desistência da reserva, pedimos a gentileza de cancelar com até 24h de antecedência via Whatsapp</li>
       <li>
-        Para reservas acima de 8 pessoas, eventos ou dias fora do horário normal de atendimento, entrar em contato via Whatsapp
+        Para reservas acima de 8 pessoas, eventos ou em dias fora do horário normal de atendimento, entrar em contato via Whatsapp
         <br>
         <a href="https://wa.me/5524992438242" target="_blank" class="btn-whatsapp">Falar no WhatsApp</a>
       </li>
+      <li>Funcionamos aos Sábados e Domingos, de meio-dia às 17h</li>
+      <li>Em caso de chuva, sua reserva pode sofrer alterações.</li>
+      <li>Em caso de desistência da reserva, pedimos a gentileza de cancelar com até 24h de antecedência</li>
     </ul>
   </div>
 
@@ -330,7 +329,7 @@
 
       <!-- SELETOR DE PESSOAS (POSICIONADO ANTES DOS HORÁRIOS PARA FILTRAGEM DINÂMICA) -->
       <div class="form-group">
-        <label for="pessoas">Quantidade de pessoas:</label>
+        <label for="pessoas">Quantidade de pessoas na reserva:</label>
         <select id="pessoas" required onchange="atualizarLotacaoSlots()">
           <option value="1">1 pessoa</option>
           <option value="2" selected>2 pessoas</option>
@@ -356,19 +355,19 @@
       <!-- CAIXA ÚNICA DE OBSERVAÇÕES E OCASIÕES ESPECIAIS -->
       <div class="form-group">
         <label for="especialObs">Precisa de algo especial? Nos conte aqui! (opcional)</label>
-        <textarea id="especialObs" rows="4" placeholder="• Sua reserva celebra alguma ocasião especial?&#10;• Possui alguma alergia, intolerância ou algo que não consuma de jeito nenhum?&#10;• A reserva inclui crianças?"></textarea>
+        <textarea id="especialObs" rows="4" placeholder="• sua reserva celebra alguma ocasião especial? (aniversario, jantar romantico, etc)&#10;• possui alguma alergia, intolerância ou algo que não consuma de jeito nenhum?"></textarea>
       </div>
 
       <!-- BOTÃO DE AÇÃO -->
       <button type="submit" class="btn-submit" id="btnSubmit" disabled>Reservar</button>
-      <div class="loading-overlay" id="loadingSubmit">Processando sua reserva...</div>
+      <div class="loading-overlay" id="loadingSubmit">Processando sua reserva na nuvem...</div>
     </form>
   </div>
 
   <!-- SEÇÃO DO COMPROVANTE DIGITAL (EXIBIDA APÓS O PROCESSAMENTO COM SUCESSO) -->
   <div class="voucher-card" id="voucherCard">
     <div class="voucher-title">✓ Reserva Confirmada!</div>
-    <div>Informe seu nome na chegada ou apresente o código:</div>
+    <div>Apresente este código ou informe seu nome na chegada:</div>
     <div class="voucher-code" id="resCodigo">#RISO-XXXX</div>
 
     <!-- DETALHES COMPROVADOS DA RESERVA -->
@@ -529,10 +528,10 @@
       };
 
       try {
-        // Envia requisição HTTP POST para o Apps Script
+        // AJUSTE CRÍTICO DE CORS: Usa Content-Type text/plain para evitar bloqueios do navegador ao enviar dados para o Apps Script
         const response = await fetch(API_URL, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
           body: JSON.stringify(payload)
         });
 
