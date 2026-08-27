@@ -206,9 +206,9 @@
       gap: 10px;
     }
 
-    /* PAINEL DE CARDS DE HORÁRIO */
+    /* PAINEL DE CARDS DE HORÁRIO (OCULTO POR DEFAULT) */
     .slots-summary-grid {
-      display: grid;
+      display: none; /* Inicialmente oculto; exibe apenas ao filtrar por data */
       grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
       gap: 10px;
       margin-bottom: 20px;
@@ -362,22 +362,20 @@
   <div class="filter-card">
     <div class="filter-group">
       <label for="dataConsulta">Data do serviço:</label>
-      <input type="date" id="dataConsulta" onchange="alternarModoVisualizacao('data')">
+      <input type="date" id="dataConsulta" onchange="aoAlterarFiltroData()">
     </div>
     <div class="filter-group">
-      <button class="btn-secondary" id="btnToggleModo" onclick="alternarModoVisualizacao('toggle')">📋 Ver todas as reservas</button>
-      <button class="btn-secondary" id="btnOcultarPassadas" style="display:none;" onclick="toggleOcultarPassadas()">👁️ Ocultar reservas passadas</button>
+      <button class="btn-secondary" id="btnLimparFiltro" style="display:none;" onclick="limparFiltroData()">🧹 Limpar Filtro</button>
+      <button class="btn-secondary" id="btnOcultarPassadas" onclick="toggleOcultarPassadas()">👁️ Ocultar reservas passadas</button>
     </div>
   </div>
 
-  <!-- RESUMO DE OCUPAÇÃO DOS SLOTS DE HORÁRIO -->
-  <div class="slots-summary-grid" id="slotsSummary">
-    <div class="loading-overlay" style="grid-column: 1/-1;">Selecione uma data para carregar os horários.</div>
-  </div>
+  <!-- RESUMO DE OCUPAÇÃO DOS SLOTS DE HORÁRIO (Aparece somente ao filtrar por data) -->
+  <div class="slots-summary-grid" id="slotsSummary"></div>
 
   <!-- CONTAINER DE SEÇÕES / TABELAS DE RESERVAS -->
   <div id="containerReservas">
-    <div class="loading-overlay">Nenhuma data selecionada.</div>
+    <div class="loading-overlay">Buscando reservas...</div>
   </div>
 
   <!-- MODAL GERENCIADOR DE DATAS LIBERADAS -->
@@ -416,123 +414,58 @@
   <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbyOyPr6hWM80KTGIhsrML7wWX1qxhGDW96j-uFNJqX-MmLcD-uiTLTojW5kkFdK870L/exec";
 
-    let modoAtual = "data"; // "data" ou "todas"
     let ocultarPassadas = false;
     let datasLiberadasSet = new Set();
     let dataCalendarioAtual = new Date();
 
     const inputData = document.getElementById("dataConsulta");
     const hojeIso = new Date().toISOString().split("T")[0];
-    inputData.value = hojeIso;
 
-    // Inicialização
-    carregarPainelADM();
+    // INICIALIZAÇÃO: Padrão carrega TODAS as reservas (campo de data vazio)
+    inputData.value = "";
+    carregarTodasReservas();
     carregarDatasLiberadasDoServidor();
 
     /**
-     * Alterna entre visualização do Dia e Visão Geral
+     * Quando o usuário escolhe uma data no input de filtro
      */
-    function alternarModoVisualizacao(origem) {
-      if (origem === 'toggle') {
-        modoAtual = modoAtual === 'data' ? 'todas' : 'data';
-      } else if (origem === 'data') {
-        modoAtual = 'data';
-      }
-
-      const btnToggle = document.getElementById("btnToggleModo");
-      const btnOcultar = document.getElementById("btnOcultarPassadas");
+    function aoAlterarFiltroData() {
+      const dataVal = inputData.value;
+      const btnLimpar = document.getElementById("btnLimparFiltro");
       const slotsSummary = document.getElementById("slotsSummary");
 
-      if (modoAtual === 'todas') {
-        btnToggle.innerText = "📅 Ver por data selecionada";
-        btnOcultar.style.display = "inline-block";
-        slotsSummary.style.display = "none";
-        carregarTodasReservas();
-      } else {
-        btnToggle.innerText = "📋 Ver todas as reservas";
-        btnOcultar.style.display = "none";
+      if (dataVal) {
+        btnLimpar.style.display = "inline-block";
         slotsSummary.style.display = "grid";
-        carregarPainelADM();
+        carregarReservasPorData(dataVal);
+      } else {
+        limparFiltroData();
       }
+    }
+
+    /**
+     * Limpa o filtro de data e volta ao modo geral (exibe tudo e oculta os cards de contador)
+     */
+    function limparFiltroData() {
+      inputData.value = "";
+      document.getElementById("btnLimparFiltro").style.display = "none";
+      document.getElementById("slotsSummary").style.display = "none";
+      carregarTodasReservas();
     }
 
     function toggleOcultarPassadas() {
       ocultarPassadas = !ocultarPassadas;
       document.getElementById("btnOcultarPassadas").innerText = ocultarPassadas ? "👁️ Mostrar reservas passadas" : "👁️ Ocultar reservas passadas";
-      carregarTodasReservas();
-    }
-
-    /**
-     * Carrega as reservas do dia selecionado
-     */
-    async function carregarPainelADM() {
-      const dataVal = inputData.value;
-      const summaryContainer = document.getElementById("slotsSummary");
-      const containerReservas = document.getElementById("containerReservas");
-
-      if (!dataVal) return;
-
-      summaryContainer.innerHTML = `<div class="loading-overlay" style="grid-column: 1/-1;">Carregando resumo do dia...</div>`;
-      containerReservas.innerHTML = `<div class="loading-overlay">Buscando reservas...</div>`;
-
-      try {
-        const response = await fetch(`${API_URL}?data=${dataVal}`);
-        const result = await response.json();
-
-        if (result.status === "success") {
-          renderSlotsSummary(result.disponibilidade);
-          carregarTabelaClientesData(dataVal);
-        } else {
-          summaryContainer.innerHTML = `<div class="loading-overlay" style="color:var(--danger); grid-column: 1/-1;">Erro ao carregar dados.</div>`;
-        }
-      } catch (err) {
-        summaryContainer.innerHTML = `<div class="loading-overlay" style="color:var(--danger); grid-column: 1/-1;">Erro de conexão com o servidor.</div>`;
-      }
-    }
-
-    function renderSlotsSummary(disponibilidade) {
-      const summaryContainer = document.getElementById("slotsSummary");
-      summaryContainer.innerHTML = "";
-
-      Object.keys(disponibilidade).forEach(horario => {
-        const info = disponibilidade[horario];
-        const card = document.createElement("div");
-        card.className = "slot-card";
-
-        const temReserva = info.ocupadas > 0;
-        const classeCapacidade = temReserva ? "capacity has-reservations" : "capacity";
-
-        card.innerHTML = `
-          <div class="time">${horario}</div>
-          <div class="${classeCapacidade}">${info.ocupadas}/8 pessoas</div>
-        `;
-
-        summaryContainer.appendChild(card);
-      });
-    }
-
-    /**
-     * Busca e exibe as reservas divididas em seções de horário para uma data
-     */
-    async function carregarTabelaClientesData(dataVal) {
-      const containerReservas = document.getElementById("containerReservas");
-
-      try {
-        const response = await fetch(`${API_URL}?data=${dataVal}&action=getReservasData`);
-        const result = await response.json();
-
-        if (result.reservas) {
-          renderSecoesPorHorario(result.reservas);
-        } else {
-          containerReservas.innerHTML = `<div class="loading-overlay">Nenhuma reserva encontrada para esta data.</div>`;
-        }
-      } catch (err) {
-        containerReservas.innerHTML = `<div class="loading-overlay" style="color:var(--danger);">Erro ao carregar lista de clientes.</div>`;
+      
+      if (inputData.value) {
+        carregarReservasPorData(inputData.value);
+      } else {
+        carregarTodasReservas();
       }
     }
 
     /**
-     * Busca todas as reservas (Histórico)
+     * Carrega todas as reservas do sistema (Default)
      */
     async function carregarTodasReservas() {
       const containerReservas = document.getElementById("containerReservas");
@@ -558,6 +491,66 @@
     }
 
     /**
+     * Carrega reservas filtradas por uma data específica + atualiza o contador dos cards
+     */
+    async function carregarReservasPorData(dataVal) {
+      const summaryContainer = document.getElementById("slotsSummary");
+      const containerReservas = document.getElementById("containerReservas");
+
+      summaryContainer.innerHTML = `<div class="loading-overlay" style="grid-column: 1/-1;">Carregando resumo do dia...</div>`;
+      containerReservas.innerHTML = `<div class="loading-overlay">Buscando reservas do dia...</div>`;
+
+      try {
+        // Busca disponibilidade para os cards
+        const respDisp = await fetch(`${API_URL}?data=${dataVal}`);
+        const resDisp = await respDisp.json();
+
+        if (resDisp.status === "success") {
+          renderSlotsSummary(resDisp.disponibilidade);
+        }
+
+        // Busca lista de reservas daquela data
+        const respList = await fetch(`${API_URL}?data=${dataVal}&action=getReservasData`);
+        const resList = await respList.json();
+
+        if (resList.reservas) {
+          let lista = resList.reservas;
+          if (ocultarPassadas) {
+            const hojeDataObj = parseDataPtBr(formatarDataIsoParaPtBr(hojeIso));
+            lista = lista.filter(r => parseDataPtBr(r.data) >= hojeDataObj);
+          }
+          renderSecoesPorHorario(lista, false);
+        } else {
+          containerReservas.innerHTML = `<div class="loading-overlay">Nenhuma reserva encontrada para esta data.</div>`;
+        }
+      } catch (err) {
+        summaryContainer.innerHTML = `<div class="loading-overlay" style="color:var(--danger); grid-column: 1/-1;">Erro ao carregar dados.</div>`;
+        containerReservas.innerHTML = `<div class="loading-overlay" style="color:var(--danger);">Erro de conexão com o servidor.</div>`;
+      }
+    }
+
+    function renderSlotsSummary(disponibilidade) {
+      const summaryContainer = document.getElementById("slotsSummary");
+      summaryContainer.innerHTML = "";
+
+      Object.keys(disponibilidade).forEach(horario => {
+        const info = disponibilidade[horario];
+        const card = document.createElement("div");
+        card.className = "slot-card";
+
+        const temReserva = info.ocupadas > 0;
+        const classeCapacidade = temReserva ? "capacity has-reservations" : "capacity";
+
+        card.innerHTML = `
+          <div class="time">${horario}</div>
+          <div class="${classeCapacidade}">${info.ocupadas}/8 pessoas</div>
+        `;
+
+        summaryContainer.appendChild(card);
+      });
+    }
+
+    /**
      * Agrupa as reservas em blocos/seções por horário
      */
     function renderSecoesPorHorario(reservas, exibeDataNaLinha = false) {
@@ -569,7 +562,7 @@
         return;
       }
 
-      // Ordena por data e por horário
+      // Ordena cronologicamente por data e horário
       reservas.sort((a, b) => {
         const dataA = parseDataPtBr(a.data);
         const dataB = parseDataPtBr(b.data);
@@ -577,7 +570,7 @@
         return a.horario.localeCompare(b.horario);
       });
 
-      // Agrupa por horário
+      // Agrupa por chave
       const grupos = {};
       reservas.forEach(res => {
         const chave = exibeDataNaLinha ? `${res.data} - ${res.horario}` : res.horario;
@@ -679,8 +672,11 @@
 
         const result = await response.json();
         if (result.status === "success") {
-          if (modoAtual === 'todas') carregarTodasReservas();
-          else carregarPainelADM();
+          if (inputData.value) {
+            carregarReservasPorData(inputData.value);
+          } else {
+            carregarTodasReservas();
+          }
         } else {
           alert(result.message || "Erro ao atualizar status.");
         }
@@ -690,7 +686,7 @@
     }
 
     /* ==========================================================================
-       LÓGICA DO MODAL DO CALENDÁRIO DE DATAS LIBERADAS
+       MODAL DO CALENDÁRIO DE DATAS LIBERADAS
        ========================================================================== */
 
     async function carregarDatasLiberadasDoServidor() {
