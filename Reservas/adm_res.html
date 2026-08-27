@@ -15,8 +15,8 @@
       --primary: #2563eb;       /* Azul primário dos botões de ação */
       --border: #cbd5e1;        /* Cor das bordas das tabelas e cards */
       --muted: #64748b;         /* Texto secundário */
-      --danger: #ef4444;        /* Vermelho para avisos e bloqueios */
-      --success: #10b981;       /* Verde para indicadores de vagas abertas */
+      --danger: #ef4444;        /* Vermelho para avisos e erros de conexão */
+      --success: #10b981;       /* Verde para horários com reservas ativas */
     }
 
     * { box-sizing: border-box; }
@@ -99,13 +99,8 @@
       color: var(--muted);
     }
 
-    .slot-card.full {
-      border-color: var(--danger);
-      background-color: #fef2f2;
-    }
-
-    .slot-card.full .capacity {
-      color: var(--danger);
+    .slot-card .capacity.has-reservations {
+      color: var(--success);
     }
 
     /* 4. TABELA DA FICHA DO DIA (LISTA DE RESERVAS) */
@@ -159,7 +154,7 @@
   <!-- CABEÇALHO DO PAINEL -->
   <div class="header">
     <h1>📅 Reservas Riso - Painel ADM</h1>
-    <a href="../Reservas/res_index.html" style="font-size: 0.85rem; color: var(--primary); text-decoration: none;">← Ir para o site do cliente</a>
+    <a href="https://riso.art.br/Reservas/res_index.html" style="font-size: 0.85rem; color: var(--primary); text-decoration: none;">← Ir para o site do cliente</a>
   </div>
 
   <!-- BARRA DE FILTRO POR DATA -->
@@ -245,13 +240,15 @@
       Object.keys(disponibilidade).forEach(horario => {
         const info = disponibilidade[horario];
         const card = document.createElement("div");
-        
-        const ehLotado = info.disponiveis <= 0;
-        card.className = `slot-card ${ehLotado ? 'full' : ''}`;
+        card.className = "slot-card";
+
+        // Aplica classe verde no subtexto se houver pelo menos 1 pessoa reservada
+        const temReserva = info.ocupadas > 0;
+        const classeCapacidade = temReserva ? "capacity has-reservations" : "capacity";
 
         card.innerHTML = `
           <div class="time">${horario}</div>
-          <div class="capacity">${info.ocupadas}/8 pessoas</div>
+          <div class="${classeCapacidade}">${info.ocupadas}/8 pessoas</div>
         `;
 
         summaryContainer.appendChild(card);
