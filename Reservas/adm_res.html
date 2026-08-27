@@ -90,7 +90,7 @@
       background-color: var(--primary-hover);
     }
 
-    /* CARD DE PANORAMA DA AGENDA (NOVO) */
+    /* CARD DE PANORAMA DA AGENDA */
     .agenda-summary-card {
       background: #eff6ff;
       border: 1px solid #bfdbfe;
@@ -344,13 +344,16 @@
       border-bottom: none;
     }
 
-    .badge-code {
-      background-color: #e0f2fe;
-      color: #0369a1;
-      padding: 4px 8px;
-      border-radius: 4px;
-      font-weight: 700;
+    /* AJUSTES DE TIPOGRAFIA DA TABELA */
+    .code-text {
+      color: var(--muted);
       font-family: monospace;
+      font-size: 0.9rem;
+    }
+
+    .client-name {
+      font-weight: 700;
+      color: var(--text);
     }
 
     /* ESTILOS DE STATUS DE RESERVA */
@@ -358,9 +361,8 @@
       background-color: var(--success-light) !important;
     }
 
-    tr.status-realizada .badge-code {
-      background-color: #d1fae5;
-      color: #065f46;
+    tr.status-realizada .code-text,
+    tr.status-realizada .client-name {
       text-decoration: line-through;
     }
 
@@ -374,9 +376,8 @@
       color: #991b1b;
     }
 
-    tr.status-cancelada .badge-code {
-      background-color: #fee2e2;
-      color: #991b1b;
+    tr.status-cancelada .code-text,
+    tr.status-cancelada .client-name {
       text-decoration: line-through;
     }
 
@@ -416,7 +417,7 @@
     </div>
   </div>
 
-  <!-- CARD DE PANORAMA DA AGENDA (NOVO) -->
+  <!-- CARD DE PANORAMA DA AGENDA -->
   <div class="agenda-summary-card">
     <div class="agenda-info">
       <div class="agenda-item">
@@ -435,7 +436,7 @@
     <button class="btn-secondary" style="font-size: 0.8rem;" onclick="abrirModalCalendario()">⚙️ Alterar Agenda</button>
   </div>
 
-  <!-- BARRA DE FILTRO E MODO DE VISUALIZAÇÃO -->
+  <!-- BARRA DE FILTRO E NAVEGAÇÃO -->
   <div class="filter-card">
     <div class="filter-group">
       <label for="dataConsulta">Data do serviço:</label>
@@ -447,7 +448,7 @@
     </div>
   </div>
 
-  <!-- RESUMO DE OCUPAÇÃO DOS SLOTS DE HORÁRIO (Aparece somente ao filtrar por data) -->
+  <!-- RESUMO DE OCUPAÇÃO DOS SLOTS DE HORÁRIO -->
   <div class="slots-summary-grid" id="slotsSummary"></div>
 
   <!-- CONTAINER DE SEÇÕES / TABELAS DE RESERVAS -->
@@ -498,7 +499,6 @@
     const inputData = document.getElementById("dataConsulta");
     const hojeIso = new Date().toISOString().split("T")[0];
 
-    // INICIALIZAÇÃO: Padrão carrega TODAS as reservas (campo de data vazio)
     inputData.value = "";
     carregarTodasReservas();
     carregarDatasLiberadasDoServidor();
@@ -699,8 +699,8 @@
                   <input type="checkbox" ${ehRealizada ? 'checked' : ''} ${ehCancelada ? 'disabled' : ''} 
                     onchange="alterarStatusReserva('${res.codigoOriginal || res.codigo}', this.checked ? 'REALIZADA' : 'REABRIR')">
                 </td>
-                <td><span class="badge-code">${codigoExibicao}</span></td>
-                <td>${res.nome}</td>
+                <td><span class="code-text">${codigoExibicao}</span></td>
+                <td><span class="client-name">${res.nome}</span></td>
                 <td><a href="https://wa.me/55${res.telefone.replace(/\D/g,'')}" target="_blank" style="color:var(--primary); font-weight: 600;">${res.telefone}</a></td>
                 <td><strong>${res.pessoas} p</strong></td>
                 <td>${res.observacoes}</td>
@@ -777,12 +777,9 @@
         return;
       }
 
-      // Ordena as datas liberadas cronologicamente
       const listaOrdenada = Array.from(datasLiberadasSet).sort((a, b) => parseDataPtBr(a) - parseDataPtBr(b));
-      
       const hojeDataObj = parseDataPtBr(formatarDataIsoParaPtBr(hojeIso));
 
-      // Filtra datas de hoje em diante
       const futuras = listaOrdenada.filter(d => parseDataPtBr(d) >= hojeDataObj);
 
       if (futuras.length > 0) {
