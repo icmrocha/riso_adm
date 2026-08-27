@@ -39,7 +39,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 20px;
+      margin-bottom: 16px;
       border-bottom: 2px solid var(--border);
       padding-bottom: 12px;
       flex-wrap: wrap;
@@ -88,6 +88,47 @@
 
     .btn-primary:hover {
       background-color: var(--primary-hover);
+    }
+
+    /* CARD DE PANORAMA DA AGENDA (NOVO) */
+    .agenda-summary-card {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 12px;
+      padding: 14px 18px;
+      margin-bottom: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .agenda-info {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      font-size: 0.88rem;
+    }
+
+    .agenda-item {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .agenda-item .label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .agenda-item .value {
+      font-weight: 800;
+      color: var(--primary);
+      font-size: 0.98rem;
+      margin-top: 2px;
     }
 
     /* BARRA DE FILTRO E NAVEGAÇÃO */
@@ -370,9 +411,28 @@
   <div class="header">
     <h1>📅 Reservas Riso - Painel ADM</h1>
     <div class="top-actions">
-      <button class="btn-primary" onclick="abrirModalCalendario()">📅 Datas Liberadas</button>
+      <button class="btn-primary" onclick="abrirModalCalendario()">📅 Gerenciar Datas</button>
       <a href="https://riso.art.br/res_index.html" class="btn-secondary" target="_blank">← Site do Cliente</a>
     </div>
+  </div>
+
+  <!-- CARD DE PANORAMA DA AGENDA (NOVO) -->
+  <div class="agenda-summary-card">
+    <div class="agenda-info">
+      <div class="agenda-item">
+        <span class="label">Dias Liberados</span>
+        <span class="value" id="lblTotalDias">--</span>
+      </div>
+      <div class="agenda-item">
+        <span class="label">Próxima Data Aberta</span>
+        <span class="value" id="lblProximaData">--</span>
+      </div>
+      <div class="agenda-item">
+        <span class="label">Última Data Aberta</span>
+        <span class="value" id="lblUltimaData">--</span>
+      </div>
+    </div>
+    <button class="btn-secondary" style="font-size: 0.8rem;" onclick="abrirModalCalendario()">⚙️ Alterar Agenda</button>
   </div>
 
   <!-- BARRA DE FILTRO E MODO DE VISUALIZAÇÃO -->
@@ -553,9 +613,6 @@
       });
     }
 
-    /**
-     * AGRUPA PRIMEIRO POR DATA, E DEPOIS CRIA AS SEÇÕES DE HORÁRIO
-     */
     function renderAgrupadoPorDataEHorario(reservas) {
       const containerReservas = document.getElementById("containerReservas");
       containerReservas.innerHTML = "";
@@ -565,7 +622,6 @@
         return;
       }
 
-      // 1. Ordena cronologicamente por Data e depois por Horário
       reservas.sort((a, b) => {
         const dataA = parseDataPtBr(a.data);
         const dataB = parseDataPtBr(b.data);
@@ -573,8 +629,7 @@
         return a.horario.localeCompare(b.horario);
       });
 
-      // 2. Agrupa por Data -> Horário
-      const estrutura = {}; // { "29/08/2026": { "12:00": [...], "13:00": [...] } }
+      const estrutura = {};
       reservas.forEach(res => {
         if (!estrutura[res.data]) estrutura[res.data] = {};
         if (!estrutura[res.data][res.horario]) estrutura[res.data][res.horario] = [];
@@ -583,7 +638,6 @@
 
       const hojeObj = parseDataPtBr(formatarDataIsoParaPtBr(hojeIso));
 
-      // 3. Renderiza no DOM
       Object.keys(estrutura).forEach(dataChave => {
         const dateBlock = document.createElement("div");
         dateBlock.className = "date-block";
@@ -699,7 +753,7 @@
     }
 
     /* ==========================================================================
-       MODAL DO CALENDÁRIO DE DATAS LIBERADAS
+       MODAL DO CALENDÁRIO & RESUMO DE DATAS LIBERADAS
        ========================================================================== */
 
     async function carregarDatasLiberadasDoServidor() {
@@ -708,8 +762,36 @@
         const result = await response.json();
         if (result.status === "success" && Array.isArray(result.datasLiberadas)) {
           datasLiberadasSet = new Set(result.datasLiberadas);
+          atualizarCardPanoramaAgenda();
         }
       } catch (err) {}
+    }
+
+    function atualizarCardPanoramaAgenda() {
+      const totalDias = datasLiberadasSet.size;
+      document.getElementById("lblTotalDias").innerText = totalDias > 0 ? `${totalDias} dia(s)` : "Nenhum dia";
+
+      if (totalDias === 0) {
+        document.getElementById("lblProximaData").innerText = "Nenhuma";
+        document.getElementById("lblUltimaData").innerText = "Nenhuma";
+        return;
+      }
+
+      // Ordena as datas liberadas cronologicamente
+      const listaOrdenada = Array.from(datasLiberadasSet).sort((a, b) => parseDataPtBr(a) - parseDataPtBr(b));
+      
+      const hojeDataObj = parseDataPtBr(formatarDataIsoParaPtBr(hojeIso));
+
+      // Filtra datas de hoje em diante
+      const futuras = listaOrdenada.filter(d => parseDataPtBr(d) >= hojeDataObj);
+
+      if (futuras.length > 0) {
+        document.getElementById("lblProximaData").innerText = futuras[0];
+        document.getElementById("lblUltimaData").innerText = futuras[futuras.length - 1];
+      } else {
+        document.getElementById("lblProximaData").innerText = "Passadas";
+        document.getElementById("lblUltimaData").innerText = listaOrdenada[listaOrdenada.length - 1];
+      }
     }
 
     function abrirModalCalendario() {
@@ -793,6 +875,7 @@
         btnSalvar.innerText = "Salvar Datas";
 
         if (result.status === "success") {
+          atualizarCardPanoramaAgenda();
           fecharModalCalendario();
           alert("Datas liberadas salvas com sucesso!");
         } else {
