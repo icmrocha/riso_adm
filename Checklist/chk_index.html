@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Checklist Operacional RISO</title>
+
+  <style>
+    /* ==========================================================================
+       1. VARIÁVEIS DE CORES E TEMA
+       ========================================================================== */
+    :root {
+      --bg: #f4f6f8;
+      --card-bg: #ffffff;
+      --text: #1e293b;
+      --accent: #10b981;   /* Verde para status concluído/ações */
+      --primary: #2563eb;  /* Azul primário */
+      --border: #e2e8f0;   /* Linhas de divisão */
+    }
+
+    /* ==========================================================================
+       2. ESTILOS GERAIS DE LAYOUT
+       ========================================================================== */
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 16px;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .logo-container {
+      text-align: center;
+      margin-bottom: 12px;
+    }
+
+    .logo {
+      max-width: 140px;
+      height: auto;
+      display: inline-block;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      text-align: center;
+      margin-bottom: 12px;
+    }
+
+    /* Indicador de carregamento/sincronização */
+    .sync-status {
+      text-align: center;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #64748b;
+      margin-bottom: 8px;
+    }
+
+    /* ==========================================================================
+       3. BOTÕES E FILTROS DE SETOR (ADM, Cozinha, Salão)
+       ========================================================================== */
+    .sector-filters {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+
+    .btn-tag {
+      flex: 1;
+      background: #e2e8f0;
+      color: #475569;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-tag.active {
+      background: var(--primary);
+      color: #ffffff;
+    }
+
+    .controls {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+      background: var(--card-bg);
+      padding: 10px;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .btn {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 0.85rem;
+    }
+
+    .btn-primary { background-color: var(--primary); color: white; }
+    .btn-danger { background-color: #ef4444; color: white; }
+    .btn-secondary { background-color: #e2e8f0; color: #334155; }
+
+    /* ==========================================================================
+       4. CATEGORIAS E ITENS DA LISTA
+       ========================================================================== */
+    .category {
+      background: var(--card-bg);
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      border-left: 4px solid var(--primary);
+    }
+
+    .category-title {
+      font-weight: 700;
+      font-size: 0.95rem;
+      text-transform: uppercase;
+      color: #64748b;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .badge-progress {
+      font-size: 0.8rem;
+      padding: 2px 8px;
+      border-radius: 12px;
+      background: #e2e8f0;
+      color: #334155;
+      font-weight: 600;
+    }
+
+    .badge-progress.complete {
+      background: var(--accent);
+      color: #ffffff;
+    }
+
+    .task-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      min-height: 20px;
+    }
+
+    .task-item {
+      display: flex;
+      align-items: center;
+      padding: 10px 8px;
+      border-bottom: 1px solid var(--border);
+      background: #fff;
+      cursor: grab;
+    }
+
+    .task-item:last-child {
+      border-bottom: none;
+    }
+
+    .task-item.completed {
+      opacity: 0.5;
+    }
+
+    .task-item.completed .task-text {
+      text-decoration: line-through;
+    }
+
+    .hide-completed .task-item.completed {
+      display: none;
+    }
+
+    .task-item input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      margin-right: 12px;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    .task-text {
+      flex: 1;
+      font-size: 0.95rem;
+    }
+
+    .task-meta {
+      font-size: 0.75rem;
+      color: #059669;
+      font-weight: 600;
+      display: block;
+      margin-top: 2px;
+      text-decoration: none !important;
+    }
+
+    .task-tag {
+      font-size: 0.7rem;
+      font-weight: bold;
+      color: #64748b;
+      background: #f1f5f9;
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-left: 8px;
+      text-transform: uppercase;
+    }
+
+    .add-form {
+      display: flex;
+      gap: 6px;
+      margin-top: 12px;
+      padding-top: 8px;
+      border-top: 1px dashed var(--border);
+    }
+
+    .add-form input {
+      flex: 1;
+      padding: 8px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-size: 0.85rem;
+    }
+
+    .add-form select {
+      padding: 8px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: #fff;
+      font-size: 0.85rem;
+      color: var(--text);
+    }
+
+    .drag-handle {
+      color: #cbd5e1;
+      margin-right: 8px;
+      cursor: grab;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Logotipo -->
+  <div class="logo-container">
+    <img src="../logo.png" alt="Logo RISO" class="logo">
+  </div>
+
+  <h1>Checklist Operacional</h1>
+  <div id="syncStatus" class="sync-status">Conectando ao Google Sheets...</div>
+
+  <!-- Filtro por Setor (ADM, Cozinha, Salão) -->
+  <div class="sector-filters">
+    <button class="btn-tag active" onclick="setSectorFilter('Tudo')">Tudo</button>
+    <button class="btn-tag" onclick="setSectorFilter('ADM')">ADM</button>
+    <button class="btn-tag" onclick="setSectorFilter('Cozinha')">Cozinha</button>
+    <button class="btn-tag" onclick="setSectorFilter('Salão')">Salão</button>
+  </div>
+
+  <!-- Controles Principais -->
+  <div class="controls">
+    <button class="btn btn-primary" id="toggleViewBtn" onclick="toggleHideCompleted()">Esconder Concluídas</button>
+    <button class="btn btn-danger" onclick="resetChecklist()">Iniciar Novo Ciclo</button>
+    <button class="btn btn-secondary" onclick="fetchMasterFromSheets()">Atualizar Agora</button>
+  </div>
+
+  <!-- Onde o checklist será montado pelo JavaScript -->
+  <div id="checklistContainer"></div>
+
+  <script>
+    /* ==========================================================================
+       5. CONFIGURAÇÃO DA API DO GOOGLE APPS SCRIPT E VARIÁVEIS GLOBAIS
+       ========================================================================== */
+    const API_URL = "https://script.google.com/macros/s/AKfycbzSBj1HDH8XdljYIJfZAhlljiVray3xwl6AP9NBU1J9nFJT_db4ng8sNT0mtu3KzkGm/exec";
+
+    let state = JSON.parse(localStorage.getItem("restaurantChecklistState")) || null;
+    let hideCompleted = false;
+    let currentSector = "Tudo";
+    let isSyncing = false;
+
+    let idServicoAtual = localStorage.getItem("restaurantServiceId");
+    if (!idServicoAtual) {
+      idServicoAtual = "SERV_" + Date.now();
+      localStorage.setItem("restaurantServiceId", idServicoAtual);
+    }
+
+    /* ==========================================================================
+       6. COMUNICAÇÃO COM O GOOGLE SHEETS
+       ========================================================================== */
+    async function fetchMasterFromSheets() {
+      if (isSyncing) return;
+
+      const statusEl = document.getElementById("syncStatus");
+
+      try {
+        const response = await fetch(API_URL);
+        const data = await response.json();
+
+        if (Array.isArray(data) && data.length > 0) {
+          state = data.map((cat, catIdx) => ({
+            category: cat.category,
+            tasks: cat.tasks.map((t, taskIdx) => ({
+              id: `${catIdx}-${taskIdx}`,
+              text: t.text,
+              tag: t.tag || "Cozinha",
+              done: t.done || false,
+              completedAt: t.completedAt || undefined
+            }))
+          }));
+          
+          saveState();
+          statusEl.innerText = "✓ Sincronizado em tempo real";
+          render();
+        }
+      } catch (error) {
+        console.error("Erro ao buscar dados:", error);
+        statusEl.innerText = "⚠ Modo offline (cópia local)";
+      }
+    }
+
+    function sendLogToSheets(categoria, tarefa, tag, status, horarioConclusao) {
+      const statusEl = document.getElementById("syncStatus");
+      statusEl.innerText = "Enviando alteração...";
+      isSyncing = true;
+
+      fetch(API_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          idServico: idServicoAtual,
+          categoria: categoria,
+          tarefa: tarefa,
+          tag: tag,
+          status: status,
+          horarioConclusao: horarioConclusao
+        })
+      })
+      .then(() => {
+        statusEl.innerText = "✓ Salvo no Google Sheets";
+        setTimeout(() => { isSyncing = false; }, 3000);
+      })
+      .catch(err => {
+        console.error("Erro ao enviar log:", err);
+        statusEl.innerText = "⚠ Erro de conexão (salvo localmente)";
+        isSyncing = false;
+      });
+    }
+
+    function addNewTaskToSheets(categoria, textoTarefa, tag) {
+      const statusEl = document.getElementById("syncStatus");
+      statusEl.innerText = "Salvando nova tarefa na aba MASTER...";
+      isSyncing = true;
+
+      fetch(API_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          acao: "CRIAR_TAREFA",
+          categoria: categoria,
+          tarefa: textoTarefa,
+          tag: tag
+        })
+      })
+      .then(() => {
+        statusEl.innerText = "✓ Tarefa salva na aba MASTER!";
+        setTimeout(() => { 
+          isSyncing = false;
+          fetchMasterFromSheets(); 
+        }, 2000);
+      })
+      .catch(err => {
+        console.error("Erro ao salvar nova tarefa:", err);
+        statusEl.innerText = "⚠ Erro ao salvar tarefa na nuvem";
+        isSyncing = false;
+      });
+    }
+
+    function saveState() {
+      localStorage.setItem("restaurantChecklistState", JSON.stringify(state));
+    }
+
+    /* ==========================================================================
+       7. GERENCIAMENTO DE TAREFAS
+       ========================================================================== */
+    function toggleTask(catIdx, taskIdx) {
+      const task = state[catIdx].tasks[taskIdx];
+      const categoria = state[catIdx].category;
+      task.done = !task.done;
+      
+      let horarioFormatado = "";
+
+      if (task.done) {
+        const agora = new Date();
+        const dia = String(agora.getDate()).padStart(2, '0');
+        const mes = String(agora.getMonth() + 1).padStart(2, '0');
+        const ano = String(agora.getFullYear()).slice(-2);
+        const horas = String(agora.getHours()).padStart(2, '0');
+        const minutos = String(agora.getMinutes()).padStart(2, '0');
+
+        horarioFormatado = `Concluído ${dia}/${mes}/${ano} às ${horas}:${minutos}`;
+        task.completedAt = horarioFormatado;
+      } else {
+        delete task.completedAt;
+      }
+
+      saveState();
+      render();
+
+      sendLogToSheets(categoria, task.text, task.tag, task.done, horarioFormatado);
+    }
+
+    function setSectorFilter(sector) {
+      currentSector = sector;
+      document.querySelectorAll(".btn-tag").forEach(btn => {
+        btn.classList.toggle("active", btn.innerText === sector);
+      });
+      render();
+    }
+
+    function toggleHideCompleted() {
+      hideCompleted = !hideCompleted;
+      render();
+    }
+
+    function resetChecklist() {
+      if (confirm("Deseja desmarcar todas as tarefas e iniciar um novo ciclo de serviço no Sheets?")) {
+        idServicoAtual = "SERV_" + Date.now();
+        localStorage.setItem("restaurantServiceId", idServicoAtual);
+
+        state.forEach(cat => cat.tasks.forEach(t => {
+          t.done = false;
+          delete t.completedAt;
+        }));
+        
+        saveState();
+        render();
+        document.getElementById("syncStatus").innerText = "Novo ciclo de serviço iniciado!";
+      }
+    }
+
+    /* ==========================================================================
+       8. FUNÇÃO DE RENDERIZAÇÃO DA INTERFACE
+       ========================================================================== */
+    function render() {
+      const container = document.getElementById("checklistContainer");
+      container.innerHTML = "";
+
+      if (hideCompleted) {
+        document.body.classList.add("hide-completed");
+        document.getElementById("toggleViewBtn").innerText = "Mostrar Todas";
+      } else {
+        document.body.classList.remove("hide-completed");
+        document.getElementById("toggleViewBtn").innerText = "Esconder Concluídas";
+      }
+
+      if (!state) return;
+
+      state.forEach((cat, catIdx) => {
+        const filteredTasks = cat.tasks.filter(t => currentSector === "Tudo" || t.tag === currentSector);
+
+        if (filteredTasks.length === 0 && currentSector !== "Tudo") return;
+
+        const catEl = document.createElement("div");
+        catEl.className = "category";
+
+        const totalTasks = filteredTasks.length;
+        const completedTasks = filteredTasks.filter(t => t.done).length;
+        const isComplete = totalTasks > 0 && totalTasks === completedTasks;
+
+        const titleEl = document.createElement("div");
+        titleEl.className = "category-title";
+        titleEl.innerHTML = `
+          <span>${cat.category}</span>
+          <span class="badge-progress ${isComplete ? 'complete' : ''}">
+            ${completedTasks}/${totalTasks} ${isComplete ? '✓' : ''}
+          </span>
+        `;
+        catEl.appendChild(titleEl);
+
+        const ul = document.createElement("ul");
+        ul.className = "task-list";
+        ul.dataset.catIdx = catIdx;
+
+        cat.tasks.forEach((task, taskIdx) => {
+          if (currentSector !== "Tudo" && task.tag !== currentSector) return;
+
+          const li = document.createElement("li");
+          li.className = `task-item ${task.done ? 'completed' : ''}`;
+          li.draggable = true;
+          li.dataset.catIdx = catIdx;
+          li.dataset.taskIdx = taskIdx;
+
+          li.innerHTML = `
+            <span class="drag-handle">⠿</span>
+            <input type="checkbox" ${task.done ? 'checked' : ''} onchange="toggleTask(${catIdx}, ${taskIdx})">
+            <span class="task-text">
+              ${task.text}
+              ${task.done && task.completedAt ? `<span class="task-meta">${task.completedAt}</span>` : ''}
+            </span>
+            <span class="task-tag">${task.tag || 'Cozinha'}</span>
+          `;
+
+          li.addEventListener("dragstart", handleDragStart);
+          li.addEventListener("dragover", handleDragOver);
+          li.addEventListener("drop", handleDrop);
+
+          ul.appendChild(li);
+        });
+
+        catEl.appendChild(ul);
+
+        const addForm = document.createElement("form");
+        addForm.className = "add-form";
+        addForm.innerHTML = `
+          <input type="text" placeholder="+ Nova tarefa nesta etapa..." required />
+          <select>
+            <option value="Cozinha" ${currentSector === "Cozinha" ? "selected" : ""}>Cozinha</option>
+            <option value="ADM" ${currentSector === "ADM" ? "selected" : ""}>ADM</option>
+            <option value="Salão" ${currentSector === "Salão" ? "selected" : ""}>Salão</option>
+          </select>
+          <button class="btn btn-secondary" type="submit">+</button>
+        `;
+
+        addForm.onsubmit = (e) => {
+          e.preventDefault();
+          const input = addForm.querySelector("input");
+          const select = addForm.querySelector("select");
+
+          const texto = input.value.trim();
+          const tag = select.value;
+
+          if (texto) {
+            cat.tasks.push({ 
+              id: Date.now().toString(), 
+              text: texto, 
+              tag: tag, 
+              done: false 
+            });
+            saveState();
+            render();
+
+            addNewTaskToSheets(cat.category, texto, tag);
+          }
+        };
+        catEl.appendChild(addForm);
+
+        container.appendChild(catEl);
+      });
+    }
+
+    /* ==========================================================================
+       9. LÓGICA DE ARRASTAR E SOLTAR (DRAG & DROP)
+       ========================================================================== */
+    let draggedItem = null;
+
+    function handleDragStart(e) {
+      draggedItem = {
+        catIdx: parseInt(this.dataset.catIdx),
+        taskIdx: parseInt(this.dataset.taskIdx)
+      };
+      e.dataTransfer.effectAllowed = "move";
+    }
+
+    function handleDragOver(e) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+    }
+
+    function handleDrop(e) {
+      e.preventDefault();
+      const targetLi = e.target.closest(".task-item");
+      const targetUl = e.target.closest(".task-list");
+
+      if (!targetUl) return;
+
+      const targetCatIdx = parseInt(targetUl.dataset.catIdx);
+      let targetTaskIdx = targetLi ? parseInt(targetLi.dataset.taskIdx) : state[targetCatIdx].tasks.length;
+
+      const [movedTask] = state[draggedItem.catIdx].tasks.splice(draggedItem.taskIdx, 1);
+      state[targetCatIdx].tasks.splice(targetTaskIdx, 0, movedTask);
+
+      saveState();
+      render();
+    }
+
+    /* ==========================================================================
+       10. INICIALIZAÇÃO
+       ========================================================================== */
+    if (state) {
+      render();
+    }
+    fetchMasterFromSheets();
+
+    setInterval(fetchMasterFromSheets, 10000);
+  </script>
+</body>
+</html>
