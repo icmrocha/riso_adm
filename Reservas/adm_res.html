@@ -181,15 +181,17 @@
       border-radius: 12px;
       padding: 20px;
       width: 100%;
-      max-width: 420px;
+      max-width: 440px;
       box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+      max-height: 90vh;
+      overflow-y: auto;
     }
 
     .modal-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 16px;
+      margin-bottom: 14px;
     }
 
     .modal-header h2 {
@@ -201,7 +203,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 12px;
+      margin-bottom: 10px;
     }
 
     .calendar-grid {
@@ -239,6 +241,53 @@
       background-color: var(--success);
       color: white;
       border-color: var(--success);
+    }
+
+    .cal-day.selected-day {
+      border: 2px solid var(--primary);
+      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+    }
+
+    /* PAINEL DE CONFIGURAÇÃO DE HORÁRIOS DO DIA SELECIONADO */
+    .day-config-panel {
+      margin-top: 16px;
+      background: #f1f5f9;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+    }
+
+    .day-config-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .slots-checkbox-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+
+    .slot-checkbox-label {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      padding: 6px 8px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+    }
+
+    .slot-checkbox-label input {
+      accent-color: var(--primary);
     }
 
     .modal-footer {
@@ -354,7 +403,6 @@
       font-family: monospace;
     }
 
-    /* ESTILOS DE STATUS DE RESERVA */
     tr.status-realizada {
       background-color: var(--success-light) !important;
     }
@@ -405,7 +453,6 @@
       color: var(--muted);
     }
 
-    /* ESTILOS DO MODAL DE ADICIONAR RESERVA MANUALMENTE */
     .modal-form-group {
       margin-bottom: 14px;
     }
@@ -473,7 +520,7 @@
     </div>
   </div>
 
-  <!-- RESUMO DE OCUPAÇÃO DOS SLOTS DE HORÁRIO (Aparece somente ao filtrar por data) -->
+  <!-- RESUMO DE OCUPAÇÃO DOS SLOTS DE HORÁRIO -->
   <div class="slots-summary-grid" id="slotsSummary"></div>
 
   <!-- CONTAINER DE SEÇÕES / TABELAS DE RESERVAS -->
@@ -481,11 +528,11 @@
     <div class="loading-overlay">Buscando reservas...</div>
   </div>
 
-  <!-- MODAL GERENCIADOR DE DATAS LIBERADAS -->
+  <!-- MODAL GERENCIADOR DE DATAS E HORÁRIOS LIBERADOS -->
   <div class="modal-overlay" id="modalCalendario">
     <div class="modal-card">
       <div class="modal-header">
-        <h2>Liberar Datas no Calendário</h2>
+        <h2>Gerenciar Agenda e Horários</h2>
         <button class="btn-action-icon" onclick="fecharModalCalendario()">✕</button>
       </div>
 
@@ -506,9 +553,27 @@
       </div>
       <div class="calendar-grid" id="gridDiasCalendario" style="margin-top: 6px;"></div>
 
+      <!-- PAINEL DINÂMICO DE HORÁRIOS PARA O DIA CLICADO -->
+      <div id="painelConfigDia" class="day-config-panel" style="display:none;">
+        <div class="day-config-title">
+          <span id="tituloDataSelecionada">Horários para: --/--/----</span>
+          <span style="font-size: 0.75rem; color: var(--muted);">Marque os horários abertos</span>
+        </div>
+        <div class="slots-checkbox-grid" id="gridHorariosDia">
+          <label class="slot-checkbox-label"><input type="checkbox" value="12:00" onchange="atualizarHorariosDia(this)"> 12:00</label>
+          <label class="slot-checkbox-label"><input type="checkbox" value="13:00" onchange="atualizarHorariosDia(this)"> 13:00</label>
+          <label class="slot-checkbox-label"><input type="checkbox" value="14:00" onchange="atualizarHorariosDia(this)"> 14:00</label>
+          <label class="slot-checkbox-label"><input type="checkbox" value="15:00" onchange="atualizarHorariosDia(this)"> 15:00</label>
+          <label class="slot-checkbox-label"><input type="checkbox" value="16:00" onchange="atualizarHorariosDia(this)"> 16:00</label>
+          <label class="slot-checkbox-label"><input type="checkbox" value="19:00" onchange="atualizarHorariosDia(this)"> 19:00</label>
+          <label class="slot-checkbox-label"><input type="checkbox" value="20:00" onchange="atualizarHorariosDia(this)"> 20:00</label>
+          <label class="slot-checkbox-label"><input type="checkbox" value="21:00" onchange="atualizarHorariosDia(this)"> 21:00</label>
+        </div>
+      </div>
+
       <div class="modal-footer">
         <button class="btn-secondary" onclick="fecharModalCalendario()">Cancelar</button>
-        <button class="btn-primary" id="btnSalvarDatas" onclick="salvarDatasLiberadas()">Salvar Datas</button>
+        <button class="btn-primary" id="btnSalvarDatas" onclick="salvarDatasLiberadas()">Salvar Alterações</button>
       </div>
     </div>
   </div>
@@ -542,6 +607,9 @@
             <option value="14:00">14:00</option>
             <option value="15:00">15:00</option>
             <option value="16:00">16:00</option>
+            <option value="19:00">19:00</option>
+            <option value="20:00">20:00</option>
+            <option value="21:00">21:00</option>
           </select>
         </div>
         <div class="modal-form-group">
@@ -578,20 +646,17 @@
     const API_URL = "https://script.google.com/macros/s/AKfycbyOyPr6hWM80KTGIhsrML7wWX1qxhGDW96j-uFNJqX-MmLcD-uiTLTojW5kkFdK870L/exec";
 
     let ocultarPassadas = false;
-    let datasLiberadasSet = new Set();
+    let agendaLiberadaMap = {}; // Ex: {"29/08/2026": ["12:00", "13:00"]}
     let dataCalendarioAtual = new Date();
+    let dataSelecionadaNoModal = null; // Data no formato DD/MM/AAAA sendo editada no modal
 
     const inputData = document.getElementById("dataConsulta");
     const hojeIso = new Date().toISOString().split("T")[0];
 
-    // INICIALIZAÇÃO: Padrão carrega TODAS as reservas (campo de data vazio)
     inputData.value = "";
     carregarTodasReservas();
     carregarDatasLiberadasDoServidor();
 
-    /**
-     * Máscara para o telefone (XX) XXXXX-XXXX
-     */
     function aplicarMascaraTelefone(input) {
       let valor = input.value.replace(/\D/g, "");
       if (valor.length > 11) valor = valor.substring(0, 11);
@@ -606,9 +671,6 @@
       input.value = valor;
     }
 
-    /**
-     * Quando o usuário escolhe uma data no input de filtro
-     */
     function aoAlterarFiltroData() {
       const dataVal = inputData.value;
       const btnLimpar = document.getElementById("btnLimparFiltro");
@@ -623,9 +685,6 @@
       }
     }
 
-    /**
-     * Limpa o filtro de data e volta ao modo geral
-     */
     function limparFiltroData() {
       inputData.value = "";
       document.getElementById("btnLimparFiltro").style.display = "none";
@@ -644,9 +703,6 @@
       }
     }
 
-    /**
-     * Carrega todas as reservas do sistema (Default)
-     */
     async function carregarTodasReservas() {
       const containerReservas = document.getElementById("containerReservas");
       containerReservas.innerHTML = `<div class="loading-overlay">Buscando todas as reservas...</div>`;
@@ -670,9 +726,6 @@
       }
     }
 
-    /**
-     * Carrega reservas filtradas por uma data específica + atualiza o contador dos cards
-     */
     async function carregarReservasPorData(dataVal) {
       const summaryContainer = document.getElementById("slotsSummary");
       const containerReservas = document.getElementById("containerReservas");
@@ -734,9 +787,6 @@
       });
     }
 
-    /**
-     * Agrupa as reservas por Data e depois por Horário (Modo Geral)
-     */
     function renderSecoesPorDataEHorario(reservas) {
       const containerReservas = document.getElementById("containerReservas");
       containerReservas.innerHTML = "";
@@ -850,9 +900,6 @@
       });
     }
 
-    /**
-     * Agrupa apenas por horário (Modo Filtrado por Data Específica)
-     */
     function renderSecoesApenasPorHorario(reservas, dataVal) {
       const containerReservas = document.getElementById("containerReservas");
       containerReservas.innerHTML = "";
@@ -946,9 +993,6 @@
       });
     }
 
-    /**
-     * Envia solicitação de alteração de status para o Apps Script
-     */
     async function alterarStatusReserva(codigoReserva, novoStatus) {
       try {
         const payload = {
@@ -978,9 +1022,7 @@
       }
     }
 
-    /* ==========================================================================
-       MODAL DE ADICIONAR RESERVA MANUALMENTE (ADM)
-       ========================================================================== */
+    /* MODAL DE ADICIONAR RESERVA MANUALMENTE */
     function abrirModalNovaReserva() {
       document.getElementById("modalNovaReserva").style.display = "flex";
       document.getElementById("admData").value = inputData.value || hojeIso;
@@ -1027,7 +1069,6 @@
             carregarTodasReservas();
           }
         } else {
-          // Se estourou a vaga, abre janela de confirmação de override
           if (result.message && (result.message.includes("vaga") || result.message.includes("limite"))) {
             const confirmarOverride = confirm(result.message + "\n\nDeseja adicionar mesmo assim (fazendo override e ultrapassando o limite de 8)?");
             if (confirmarOverride) {
@@ -1046,31 +1087,39 @@
     }
 
     /* ==========================================================================
-       MODAL DO CALENDÁRIO DE DATAS LIBERADAS & ATUALIZAÇÃO DO CARD SUPERIOR
+       MODAL DO CALENDÁRIO COM SELEÇÃO DE HORÁRIOS POR DIA
        ========================================================================== */
 
     async function carregarDatasLiberadasDoServidor() {
       try {
         const response = await fetch(`${API_URL}?action=getDatasLiberadas`);
         const result = await response.json();
-        if (result.status === "success" && Array.isArray(result.datasLiberadas)) {
-          datasLiberadasSet = new Set(result.datasLiberadas);
+        if (result.status === "success") {
+          if (result.agendaMap) {
+            agendaLiberadaMap = result.agendaMap;
+          } else if (Array.isArray(result.datasLiberadas)) {
+            // Compatibilidade com formato antigo se houver
+            agendaLiberadaMap = {};
+            result.datasLiberadas.forEach(d => {
+              agendaLiberadaMap[d] = ["12:00", "13:00", "14:00", "15:00", "16:00"];
+            });
+          }
           atualizarCardsEstatisticasAgenda();
         }
       } catch (err) {}
     }
 
     function atualizarCardsEstatisticasAgenda() {
-      const totalDias = datasLiberadasSet.size;
-      document.getElementById("statDiasCount").innerText = `${totalDias} dia(s)`;
+      const datasKeys = Object.keys(agendaLiberadaMap).filter(d => agendaLiberadaMap[d].length > 0);
+      document.getElementById("statDiasCount").innerText = `${datasKeys.length} dia(s)`;
 
-      if (totalDias === 0) {
+      if (datasKeys.length === 0) {
         document.getElementById("statProximaData").innerText = "-";
         document.getElementById("statUltimaData").innerText = "-";
         return;
       }
 
-      const datasOrdenadas = Array.from(datasLiberadasSet).map(d => {
+      const datasOrdenadas = datasKeys.map(d => {
         return { str: d, obj: parseDataPtBr(d) };
       }).sort((a, b) => a.obj - b.obj);
 
@@ -1088,6 +1137,8 @@
 
     function abrirModalCalendario() {
       document.getElementById("modalCalendario").style.display = "flex";
+      dataSelecionadaNoModal = null;
+      document.getElementById("painelConfigDia").style.display = "none";
       renderizarGridCalendario();
     }
 
@@ -1098,6 +1149,8 @@
 
     function mudarMesCalendario(delta) {
       dataCalendarioAtual.setMonth(dataCalendarioAtual.getMonth() + delta);
+      dataSelecionadaNoModal = null;
+      document.getElementById("painelConfigDia").style.display = "none";
       renderizarGridCalendario();
     }
 
@@ -1127,23 +1180,61 @@
         const dataPtBr = `${diaStr}/${mesStr}/${ano}`;
 
         const divDay = document.createElement("div");
-        const estaLiberada = datasLiberadasSet.has(dataPtBr);
+        const temHorarios = agendaLiberadaMap[dataPtBr] && agendaLiberadaMap[dataPtBr].length > 0;
 
-        divDay.className = `cal-day ${estaLiberada ? 'active' : ''}`;
+        let classes = "cal-day";
+        if (temHorarios) classes += " active";
+        if (dataSelecionadaNoModal === dataPtBr) classes += " selected-day";
+
+        divDay.className = classes;
         divDay.innerText = dia;
 
         divDay.onclick = () => {
-          if (datasLiberadasSet.has(dataPtBr)) {
-            datasLiberadasSet.delete(dataPtBr);
-            divDay.classList.remove("active");
-          } else {
-            datasLiberadasSet.add(dataPtBr);
-            divDay.classList.add("active");
-          }
+          selecionarDiaNoModal(dataPtBr);
         };
 
         grid.appendChild(divDay);
       }
+    }
+
+    function selecionarDiaNoModal(dataPtBr) {
+      dataSelecionadaNoModal = dataPtBr;
+      renderizarGridCalendario(); // Atualiza borda de seleção no grid
+
+      document.getElementById("tituloDataSelecionada").innerText = `Horários para: ${dataPtBr}`;
+      document.getElementById("painelConfigDia").style.display = "block";
+
+      // Marca/desmarca checkboxes conforme os horários salvos para este dia
+      const horariosAtivos = agendaLiberadaMap[dataPtBr] || [];
+      const checkboxes = document.querySelectorAll("#gridHorariosDia input[type='checkbox']");
+      
+      checkboxes.forEach(cb => {
+        cb.checked = horariosAtivos.includes(cb.value);
+      });
+    }
+
+    function atualizarHorariosDia(checkbox) {
+      if (!dataSelecionadaNoModal) return;
+
+      if (!agendaLiberadaMap[dataSelecionadaNoModal]) {
+        agendaLiberadaMap[dataSelecionadaNoModal] = [];
+      }
+
+      let horarios = agendaLiberadaMap[dataSelecionadaNoModal];
+      const hora = checkbox.value;
+
+      if (checkbox.checked) {
+        if (!horarios.includes(hora)) horarios.push(hora);
+      } else {
+        agendaLiberadaMap[dataSelecionadaNoModal] = horarios.filter(h => h !== hora);
+      }
+
+      // Se remover todos os horários do dia, remove a chave do mapa
+      if (agendaLiberadaMap[dataSelecionadaNoModal].length === 0) {
+        delete agendaLiberadaMap[dataSelecionadaNoModal];
+      }
+
+      renderizarGridCalendario();
     }
 
     async function salvarDatasLiberadas() {
@@ -1154,7 +1245,7 @@
       try {
         const payload = {
           action: "salvarDatasLiberadas",
-          datas: Array.from(datasLiberadasSet)
+          agendaMap: agendaLiberadaMap
         };
 
         const response = await fetch(API_URL, {
@@ -1165,22 +1256,21 @@
 
         const result = await response.json();
         btnSalvar.disabled = false;
-        btnSalvar.innerText = "Salvar Datas";
+        btnSalvar.innerText = "Salvar Alterações";
 
         if (result.status === "success") {
           fecharModalCalendario();
-          alert("Datas liberadas salvas com sucesso!");
+          alert("Agenda e horários salvos com sucesso!");
         } else {
-          alert("Erro ao salvar datas liberadas.");
+          alert("Erro ao salvar agenda.");
         }
       } catch (err) {
         btnSalvar.disabled = false;
-        btnSalvar.innerText = "Salvar Datas";
-        alert("Erro de conexão ao salvar datas.");
+        btnSalvar.innerText = "Salvar Alterações";
+        alert("Erro de conexão ao salvar agenda.");
       }
     }
 
-    /* UTILITÁRIOS DE DATA */
     function parseDataPtBr(strData) {
       if (!strData) return new Date(0);
       const p = strData.split("/");
