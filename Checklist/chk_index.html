@@ -302,6 +302,7 @@
     let hideCompleted = false;
     let currentSector = "Tudo";
     let isSyncing = false;
+    let lastLocalUpdate = 0; // TRAVA DE SEGURANÇA: Registra o momento da última alteração local
 
     let idServicoAtual = localStorage.getItem("restaurantServiceId");
     if (!idServicoAtual) {
@@ -313,6 +314,9 @@
        6. COMUNICAÇÃO COM O GOOGLE SHEETS
        ========================================================================== */
     async function fetchMasterFromSheets() {
+      // Bloqueia a leitura do servidor se o usuário alterou algo nos últimos 6 segundos.
+      // Isso evita que o cache atrasado do Google Sheets sobrescreva a tela.
+      if (Date.now() - lastLocalUpdate < 6000) return;
       if (isSyncing) return;
 
       const statusEl = document.getElementById("syncStatus");
@@ -360,7 +364,8 @@
           categoria: categoria,
           tarefa: tarefa,
           tag: tag,
-          status: status,
+          // CORREÇÃO: Enviando string explícita para o Apps Script não ignorar o valor "false"
+          status: status ? "TRUE" : "FALSE", 
           horarioConclusao: horarioConclusao
         })
       })
@@ -380,6 +385,7 @@
       const statusEl = document.getElementById("syncStatus");
       statusEl.innerText = "Salvando nova tarefa na aba MASTER...";
       isSyncing = true;
+      lastLocalUpdate = Date.now();
 
       fetch(API_URL, {
         method: "POST",
@@ -419,6 +425,7 @@
       task.done = !task.done;
       
       let horarioFormatado = "";
+      lastLocalUpdate = Date.now(); // Ativa a trava para proteger a edição
 
       if (task.done) {
         const agora = new Date();
@@ -455,8 +462,15 @@
 
     function resetChecklist() {
       if (confirm("Deseja desmarcar todas as tarefas e iniciar um novo ciclo de serviço no Sheets?")) {
+        
+        // CORREÇÃO: Salva o ID antigo antes de sobrescrever, para que a nuvem saiba o que limpar
+        const idAntigo = idServicoAtual;
+        
         idServicoAtual = "SERV_" + Date.now();
         localStorage.setItem("restaurantServiceId", idServicoAtual);
+
+        // Limpeza local e acionamento da trava de tempo
+        lastLocalUpdate = Date.now();
 
         state.forEach(cat => cat.tasks.forEach(t => {
           t.done = false;
@@ -508,7 +522,6 @@
 
       if (!state) return;
 
-      // Variáveis acumuladoras para o progresso geral
       let totalGeral = 0;
       let concluidasGeral = 0;
 
@@ -608,7 +621,6 @@
         container.appendChild(catEl);
       });
 
-      // Atualização do Elemento HTML de Progresso Global no Topo
       if (globalProgressEl) {
         const percentual = totalGeral === 0 ? 0 : Math.round((concluidasGeral / totalGeral) * 100);
         const corTextoGeral = (concluidasGeral === totalGeral && totalGeral > 0) ? 'var(--accent)' : 'inherit';
