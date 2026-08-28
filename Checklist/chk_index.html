@@ -59,7 +59,7 @@
     }
 
     /* ==========================================================================
-       PROGRESSO GLOBAL (NOVO)
+       PROGRESSO GLOBAL
        ========================================================================== */
     .global-progress {
       background: var(--card-bg);
@@ -269,7 +269,7 @@
   <h1>Checklist Operacional</h1>
   <div id="syncStatus" class="sync-status">Conectando ao Google Sheets...</div>
 
-  <!-- Progresso Global (NOVO) -->
+  <!-- Progresso Global -->
   <div id="globalProgress" class="global-progress">
     Carregando painel de tarefas...
   </div>
@@ -302,6 +302,7 @@
     let hideCompleted = false;
     let currentSector = "Tudo";
     let isSyncing = false;
+    let lastLocalUpdate = 0; // TRAVA DE SEGURANÇA: Registra o momento da última alteração local
 
     let idServicoAtual = localStorage.getItem("restaurantServiceId");
     if (!idServicoAtual) {
@@ -313,12 +314,16 @@
        6. COMUNICAÇÃO COM O GOOGLE SHEETS
        ========================================================================== */
     async function fetchMasterFromSheets() {
+      // Bloqueia a leitura do servidor se o usuário alterou algo nos últimos 6 segundos.
+      // Isso evita que o cache atrasado do Google Sheets sobrescreva a tela.
+      if (Date.now() - lastLocalUpdate < 6000) return;
       if (isSyncing) return;
 
       const statusEl = document.getElementById("syncStatus");
 
       try {
-        const response = await fetch(API_URL);
+        const urlComAntiCache = `${API_URL}?idServico=${idServicoAtual}&t=${Date.now()}`;
+        const response = await fetch(urlComAntiCache);
         const data = await response.json();
 
         if (Array.isArray(data) && data.length > 0) {
@@ -353,17 +358,19 @@
         mode: "no-cors",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          acao: "ATUALIZAR_STATUS",
           idServico: idServicoAtual,
           categoria: categoria,
           tarefa: tarefa,
           tag: tag,
-          status: status,
+          // CORREÇÃO: Enviando string explícita para o Apps Script não ignorar o valor "false"
+          status: status ? "TRUE" : "FALSE", 
           horarioConclusao: horarioConclusao
         })
       })
       .then(() => {
         statusEl.innerText = "✓ Salvo no Google Sheets";
-        setTimeout(() => { isSyncing = false; }, 3000);
+        setTimeout(() => { isSyncing = false; }, 4000); 
       })
       .catch(err => {
         console.error("Erro ao enviar log:", err);
@@ -376,6 +383,7 @@
       const statusEl = document.getElementById("syncStatus");
       statusEl.innerText = "Salvando nova tarefa na aba MASTER...";
       isSyncing = true;
+      lastLocalUpdate = Date.now();
 
       fetch(API_URL, {
         method: "POST",
@@ -393,7 +401,7 @@
         setTimeout(() => { 
           isSyncing = false;
           fetchMasterFromSheets(); 
-        }, 2000);
+        }, 3000);
       })
       .catch(err => {
         console.error("Erro ao salvar nova tarefa:", err);
@@ -415,6 +423,7 @@
       task.done = !task.done;
       
       let horarioFormatado = "";
+      lastLocalUpdate = Date.now(); // Ativa a trava para proteger a edição
 
       if (task.done) {
         const agora = new Date();
@@ -451,8 +460,15 @@
 
     function resetChecklist() {
       if (confirm("Deseja desmarcar todas as tarefas e iniciar um novo ciclo de serviço no Sheets?")) {
+        
+        // CORREÇÃO: Salva o ID antigo antes de sobrescrever, para que a nuvem saiba o que limpar
+        const idAntigo = idServicoAtual;
+        
         idServicoAtual = "SERV_" + Date.now();
         localStorage.setItem("restaurantServiceId", idServicoAtual);
+
+        // Limpeza local e acionamento da trava de tempo
+        lastLocalUpdate = Date.now();
 
         state.forEach(cat => cat.tasks.forEach(t => {
           t.done = false;
@@ -461,7 +477,27 @@
         
         saveState();
         render();
-        document.getElementById("syncStatus").innerText = "Novo ciclo de serviço iniciado!";
+        
+        const statusEl = document.getElementById("syncStatus");
+        statusEl.innerText = "Limpando ciclo na nuvem...";
+        isSyncing = true;
+        
+        fetch(API_URL, {
+          method: "POST",
+          mode: "no-cors",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            acao: "RESET",
+            idServico: idAntigo // Manda o ID correto do ciclo anterior para a nuvem desmarcar
+          })
+        }).then(() => {
+          statusEl.innerText = "✓ Novo ciclo de serviço iniciado!";
+          setTimeout(() => { isSyncing = false; }, 3000);
+        }).catch(err => {
+          console.error(err);
+          statusEl.innerText = "⚠ Erro ao limpar nuvem";
+          isSyncing = false;
+        });
       }
     }
 
@@ -483,14 +519,12 @@
 
       if (!state) return;
 
-      // Variáveis acumuladoras para o progresso geral
       let totalGeral = 0;
       let concluidasGeral = 0;
 
       state.forEach((cat, catIdx) => {
         const filteredTasks = cat.tasks.filter(t => currentSector === "Tudo" || t.tag === currentSector);
 
-        // Preenche os acumuladores independentemente da categoria estar oculta ou não
         totalGeral += filteredTasks.length;
         concluidasGeral += filteredTasks.filter(t => t.done).length;
 
@@ -583,7 +617,6 @@
         container.appendChild(catEl);
       });
 
-      // Atualização do Elemento HTML de Progresso Global no Topo
       if (globalProgressEl) {
         const percentual = totalGeral === 0 ? 0 : Math.round((concluidasGeral / totalGeral) * 100);
         const corTextoGeral = (concluidasGeral === totalGeral && totalGeral > 0) ? 'var(--accent)' : 'inherit';
