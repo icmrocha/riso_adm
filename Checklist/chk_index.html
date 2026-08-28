@@ -59,7 +59,7 @@
     }
 
     /* ==========================================================================
-       PROGRESSO GLOBAL (NOVO)
+       PROGRESSO GLOBAL
        ========================================================================== */
     .global-progress {
       background: var(--card-bg);
@@ -269,7 +269,7 @@
   <h1>Checklist Operacional</h1>
   <div id="syncStatus" class="sync-status">Conectando ao Google Sheets...</div>
 
-  <!-- Progresso Global (NOVO) -->
+  <!-- Progresso Global -->
   <div id="globalProgress" class="global-progress">
     Carregando painel de tarefas...
   </div>
@@ -318,7 +318,9 @@
       const statusEl = document.getElementById("syncStatus");
 
       try {
-        const response = await fetch(API_URL);
+        // CORREÇÃO: Adicionado o idServicoAtual e um anti-cache (?t=...) na requisição
+        const urlComAntiCache = `${API_URL}?idServico=${idServicoAtual}&t=${Date.now()}`;
+        const response = await fetch(urlComAntiCache);
         const data = await response.json();
 
         if (Array.isArray(data) && data.length > 0) {
@@ -346,13 +348,14 @@
     function sendLogToSheets(categoria, tarefa, tag, status, horarioConclusao) {
       const statusEl = document.getElementById("syncStatus");
       statusEl.innerText = "Enviando alteração...";
-      isSyncing = true;
+      isSyncing = true; // Impede sobrescritas enquanto a alteração é enviada
 
       fetch(API_URL, {
         method: "POST",
         mode: "no-cors",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          acao: "ATUALIZAR_STATUS", // Garantindo que o servidor saiba da ação
           idServico: idServicoAtual,
           categoria: categoria,
           tarefa: tarefa,
@@ -363,7 +366,8 @@
       })
       .then(() => {
         statusEl.innerText = "✓ Salvo no Google Sheets";
-        setTimeout(() => { isSyncing = false; }, 3000);
+        // CORREÇÃO: Tempo aumentado para 4s para evitar que o Sheets atrase na leitura
+        setTimeout(() => { isSyncing = false; }, 4000); 
       })
       .catch(err => {
         console.error("Erro ao enviar log:", err);
@@ -393,7 +397,7 @@
         setTimeout(() => { 
           isSyncing = false;
           fetchMasterFromSheets(); 
-        }, 2000);
+        }, 3000);
       })
       .catch(err => {
         console.error("Erro ao salvar nova tarefa:", err);
@@ -461,7 +465,28 @@
         
         saveState();
         render();
-        document.getElementById("syncStatus").innerText = "Novo ciclo de serviço iniciado!";
+        
+        // CORREÇÃO: Informando o servidor explicitamente sobre a limpeza do ciclo
+        const statusEl = document.getElementById("syncStatus");
+        statusEl.innerText = "Limpando ciclo na nuvem...";
+        isSyncing = true;
+        
+        fetch(API_URL, {
+          method: "POST",
+          mode: "no-cors",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            acao: "RESET",
+            idServico: idServicoAtual
+          })
+        }).then(() => {
+          statusEl.innerText = "✓ Novo ciclo de serviço iniciado!";
+          setTimeout(() => { isSyncing = false; }, 3000);
+        }).catch(err => {
+          console.error(err);
+          statusEl.innerText = "⚠ Erro ao limpar nuvem";
+          isSyncing = false;
+        });
       }
     }
 
@@ -490,7 +515,7 @@
       state.forEach((cat, catIdx) => {
         const filteredTasks = cat.tasks.filter(t => currentSector === "Tudo" || t.tag === currentSector);
 
-        // Preenche os acumuladores independentemente da categoria estar oculta ou não
+        // Preenche os acumuladores
         totalGeral += filteredTasks.length;
         concluidasGeral += filteredTasks.filter(t => t.done).length;
 
