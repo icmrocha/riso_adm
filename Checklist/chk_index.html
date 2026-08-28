@@ -59,6 +59,22 @@
     }
 
     /* ==========================================================================
+       PROGRESSO GLOBAL (NOVO)
+       ========================================================================== */
+    .global-progress {
+      background: var(--card-bg);
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 16px;
+      text-align: center;
+      font-size: 1rem;
+      font-weight: 700;
+      color: #334155;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      border: 1px solid var(--border);
+    }
+
+    /* ==========================================================================
        3. BOTÕES E FILTROS DE SETOR (ADM, Cozinha, Salão)
        ========================================================================== */
     .sector-filters {
@@ -252,6 +268,11 @@
 
   <h1>Checklist Operacional</h1>
   <div id="syncStatus" class="sync-status">Conectando ao Google Sheets...</div>
+
+  <!-- Progresso Global (NOVO) -->
+  <div id="globalProgress" class="global-progress">
+    Carregando painel de tarefas...
+  </div>
 
   <!-- Filtro por Setor (ADM, Cozinha, Salão) -->
   <div class="sector-filters">
@@ -449,6 +470,7 @@
        ========================================================================== */
     function render() {
       const container = document.getElementById("checklistContainer");
+      const globalProgressEl = document.getElementById("globalProgress");
       container.innerHTML = "";
 
       if (hideCompleted) {
@@ -461,8 +483,16 @@
 
       if (!state) return;
 
+      // Variáveis acumuladoras para o progresso geral
+      let totalGeral = 0;
+      let concluidasGeral = 0;
+
       state.forEach((cat, catIdx) => {
         const filteredTasks = cat.tasks.filter(t => currentSector === "Tudo" || t.tag === currentSector);
+
+        // Preenche os acumuladores independentemente da categoria estar oculta ou não
+        totalGeral += filteredTasks.length;
+        concluidasGeral += filteredTasks.filter(t => t.done).length;
 
         if (filteredTasks.length === 0 && currentSector !== "Tudo") return;
 
@@ -552,6 +582,14 @@
 
         container.appendChild(catEl);
       });
+
+      // Atualização do Elemento HTML de Progresso Global no Topo
+      if (globalProgressEl) {
+        const percentual = totalGeral === 0 ? 0 : Math.round((concluidasGeral / totalGeral) * 100);
+        const corTextoGeral = (concluidasGeral === totalGeral && totalGeral > 0) ? 'var(--accent)' : 'inherit';
+        
+        globalProgressEl.innerHTML = `Progresso do Serviço: <span style="color: ${corTextoGeral}">${concluidasGeral} / ${totalGeral}</span> tarefas (${percentual}%)`;
+      }
     }
 
     /* ==========================================================================
