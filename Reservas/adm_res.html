@@ -991,8 +991,8 @@
       document.getElementById("formNovaReserva").reset();
     }
 
-    async function adicionarReservaManual(e) {
-      e.preventDefault();
+    async function adicionarReservaManual(e, override = false) {
+      if (e) e.preventDefault();
       const btnSalvar = document.getElementById("btnSalvarReservaManual");
       btnSalvar.disabled = true;
       btnSalvar.innerText = "Salvando...";
@@ -1003,7 +1003,8 @@
         dataReserva: document.getElementById("admData").value,
         horario: document.getElementById("admHorario").value,
         pessoas: document.getElementById("admPessoas").value,
-        observacoes: document.getElementById("admObs").value.trim() || "Reserva inserida manualmente pelo ADM"
+        observacoes: document.getElementById("admObs").value.trim() || "Reserva inserida manualmente pelo ADM",
+        override: override
       };
 
       try {
@@ -1026,7 +1027,16 @@
             carregarTodasReservas();
           }
         } else {
-          alert(result.message || "Erro ao salvar reserva.");
+          // Se estourou a vaga, abre janela de confirmação de override
+          if (result.message && (result.message.includes("vaga") || result.message.includes("limite"))) {
+            const confirmarOverride = confirm(result.message + "\n\nDeseja adicionar mesmo assim (fazendo override e ultrapassando o limite de 8)?");
+            if (confirmarOverride) {
+              adicionarReservaManual(null, true);
+              return;
+            }
+          } else {
+            alert(result.message || "Erro ao salvar reserva.");
+          }
         }
       } catch (err) {
         btnSalvar.disabled = false;
