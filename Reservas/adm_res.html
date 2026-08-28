@@ -280,6 +280,11 @@
       color: var(--success);
     }
 
+    .slot-card .capacity.exceeded {
+      color: var(--danger);
+      font-weight: 700;
+    }
+
     /* SEÇÕES DE DATA E HORÁRIO */
     .date-section-title {
       font-size: 1.1rem;
@@ -522,7 +527,7 @@
         </div>
         <div class="modal-form-group">
           <label for="admTelefone">Telefone (WhatsApp):</label>
-          <input type="tel" id="admTelefone" required placeholder="(24) 99999-9999">
+          <input type="tel" id="admTelefone" required placeholder="(24) 99999-9999" maxlength="15" oninput="aplicarMascaraTelefone(this)">
         </div>
         <div class="modal-form-group">
           <label for="admData">Data da Reserva:</label>
@@ -550,6 +555,10 @@
             <option value="6">6 pessoas</option>
             <option value="7">7 pessoas</option>
             <option value="8">8 pessoas</option>
+            <option value="9">9 pessoas (Override)</option>
+            <option value="10">10 pessoas (Override)</option>
+            <option value="12">12 pessoas (Override)</option>
+            <option value="15">15 pessoas (Override)</option>
           </select>
         </div>
         <div class="modal-form-group">
@@ -581,6 +590,23 @@
     carregarDatasLiberadasDoServidor();
 
     /**
+     * Máscara para o telefone (XX) XXXXX-XXXX
+     */
+    function aplicarMascaraTelefone(input) {
+      let valor = input.value.replace(/\D/g, "");
+      if (valor.length > 11) valor = valor.substring(0, 11);
+
+      if (valor.length > 7) {
+        valor = valor.replace(/^(\d{2})(\d{5})(\d{4}).*/, "($1) $2-$3");
+      } else if (valor.length > 2) {
+        valor = valor.replace(/^(\d{2})(\d+)/, "($1) $2");
+      } else if (valor.length > 0) {
+        valor = valor.replace(/^(\d*)/, "($1");
+      }
+      input.value = valor;
+    }
+
+    /**
      * Quando o usuário escolhe uma data no input de filtro
      */
     function aoAlterarFiltroData() {
@@ -598,7 +624,7 @@
     }
 
     /**
-     * Limpa o filtro de data e volta ao modo geral (exibe tudo e oculta os cards de contador)
+     * Limpa o filtro de data e volta ao modo geral
      */
     function limparFiltroData() {
       inputData.value = "";
@@ -690,12 +716,18 @@
         const card = document.createElement("div");
         card.className = "slot-card";
 
-        const temReserva = info.ocupadas > 0;
-        const classeCapacidade = temReserva ? "capacity has-reservations" : "capacity";
+        const ocupadas = info.ocupadas;
+        const excedido = ocupadas > 8;
+        let classeCapacidade = "capacity";
+        if (excedido) {
+          classeCapacidade = "capacity exceeded";
+        } else if (ocupadas > 0) {
+          classeCapacidade = "capacity has-reservations";
+        }
 
         card.innerHTML = `
           <div class="time">${horario}</div>
-          <div class="${classeCapacidade}">${info.ocupadas}/8 vagas ocupadas</div>
+          <div class="${classeCapacidade}">${ocupadas}/8 vagas ocupadas${excedido ? ' ⚠️' : ''}</div>
         `;
 
         summaryContainer.appendChild(card);
@@ -721,7 +753,6 @@
         return a.horario.localeCompare(b.horario);
       });
 
-      // Agrupa por data
       const gruposPorData = {};
       reservas.forEach(res => {
         if (!gruposPorData[res.data]) gruposPorData[res.data] = [];
@@ -731,15 +762,13 @@
       const hojeObj = parseDataPtBr(formatarDataIsoParaPtBr(hojeIso));
 
       Object.keys(gruposPorData).forEach(dataStr => {
-        const listaData = gruposPorData[res = dataStr];
+        const listaData = gruposPorData[dataStr];
         
-        // Título da Data
         const dateTitle = document.createElement("div");
         dateTitle.className = "date-section-title";
         dateTitle.innerText = `Data: ${dataStr}`;
         containerReservas.appendChild(dateTitle);
 
-        // Sub-agrupar por horário dentro da data
         const gruposHorario = {};
         listaData.forEach(r => {
           if (!gruposHorario[r.horario]) gruposHorario[r.horario] = [];
@@ -749,6 +778,7 @@
         Object.keys(gruposHorario).forEach(horarioStr => {
           const listaSlot = gruposHorario[horarioStr];
           const totalPessoas = listaSlot.reduce((acc, r) => acc + (r.codigo === "CANCELADA" ? 0 : Number(r.pessoas)), 0);
+          const excedido = totalPessoas > 8;
 
           const section = document.createElement("div");
           section.className = "time-section";
@@ -756,7 +786,9 @@
           let htmlHeader = `
             <div class="time-section-header">
               <span>Horário: ${horarioStr}</span>
-              <span style="font-size: 0.85rem; font-weight: 600; color: var(--muted);">${totalPessoas}/8 vagas ocupadas</span>
+              <span style="font-size: 0.85rem; font-weight: 600; color: ${excedido ? 'var(--danger)' : 'var(--muted)'};">
+                ${totalPessoas}/8 vagas ocupadas${excedido ? ' ⚠️ (Excedido)' : ''}
+              </span>
             </div>
           `;
 
@@ -843,6 +875,7 @@
       Object.keys(grupos).forEach(horarioStr => {
         const listaSlot = grupos[horarioStr];
         const totalPessoas = listaSlot.reduce((acc, r) => acc + (r.codigo === "CANCELADA" ? 0 : Number(r.pessoas)), 0);
+        const excedido = totalPessoas > 8;
 
         const section = document.createElement("div");
         section.className = "time-section";
@@ -850,7 +883,9 @@
         let htmlHeader = `
           <div class="time-section-header">
             <span>Horário: ${horarioStr}</span>
-            <span style="font-size: 0.85rem; font-weight: 600; color: var(--muted);">${totalPessoas}/8 vagas ocupadas</span>
+            <span style="font-size: 0.85rem; font-weight: 600; color: ${excedido ? 'var(--danger)' : 'var(--muted)'};">
+              ${totalPessoas}/8 vagas ocupadas${excedido ? ' ⚠️ (Excedido)' : ''}
+            </span>
           </div>
         `;
 
@@ -1025,7 +1060,6 @@
         return;
       }
 
-      // Ordenar as datas para achar a próxima e a última
       const datasOrdenadas = Array.from(datasLiberadasSet).map(d => {
         return { str: d, obj: parseDataPtBr(d) };
       }).sort((a, b) => a.obj - b.obj);
