@@ -322,6 +322,7 @@
       const statusEl = document.getElementById("syncStatus");
 
       try {
+        // CORREÇÃO: Adicionado o idServicoAtual e um anti-cache (?t=...) na requisição
         const urlComAntiCache = `${API_URL}?idServico=${idServicoAtual}&t=${Date.now()}`;
         const response = await fetch(urlComAntiCache);
         const data = await response.json();
@@ -351,14 +352,14 @@
     function sendLogToSheets(categoria, tarefa, tag, status, horarioConclusao) {
       const statusEl = document.getElementById("syncStatus");
       statusEl.innerText = "Enviando alteração...";
-      isSyncing = true;
+      isSyncing = true; // Impede sobrescritas enquanto a alteração é enviada
 
       fetch(API_URL, {
         method: "POST",
         mode: "no-cors",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          acao: "ATUALIZAR_STATUS",
+          acao: "ATUALIZAR_STATUS", // Garantindo que o servidor saiba da ação
           idServico: idServicoAtual,
           categoria: categoria,
           tarefa: tarefa,
@@ -370,6 +371,7 @@
       })
       .then(() => {
         statusEl.innerText = "✓ Salvo no Google Sheets";
+        // CORREÇÃO: Tempo aumentado para 4s para evitar que o Sheets atrase na leitura
         setTimeout(() => { isSyncing = false; }, 4000); 
       })
       .catch(err => {
@@ -478,6 +480,7 @@
         saveState();
         render();
         
+        // CORREÇÃO: Informando o servidor explicitamente sobre a limpeza do ciclo
         const statusEl = document.getElementById("syncStatus");
         statusEl.innerText = "Limpando ciclo na nuvem...";
         isSyncing = true;
@@ -488,7 +491,7 @@
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             acao: "RESET",
-            idServico: idAntigo // Manda o ID correto do ciclo anterior para a nuvem desmarcar
+            idServico: idServicoAtual
           })
         }).then(() => {
           statusEl.innerText = "✓ Novo ciclo de serviço iniciado!";
@@ -525,6 +528,7 @@
       state.forEach((cat, catIdx) => {
         const filteredTasks = cat.tasks.filter(t => currentSector === "Tudo" || t.tag === currentSector);
 
+        // Preenche os acumuladores
         totalGeral += filteredTasks.length;
         concluidasGeral += filteredTasks.filter(t => t.done).length;
 
