@@ -39,13 +39,14 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 16px;
+      margin-bottom: 20px;
       border-bottom: 2px solid var(--border);
       padding-bottom: 12px;
       flex-wrap: wrap;
       gap: 10px;
     }
 
+    /* REQUISITO 3: Removido o icone de calendario do titulo h1 */
     h1 {
       font-size: 1.4rem;
       margin: 0;
@@ -88,47 +89,6 @@
 
     .btn-primary:hover {
       background-color: var(--primary-hover);
-    }
-
-    /* CARD DE PANORAMA DA AGENDA */
-    .agenda-summary-card {
-      background: #eff6ff;
-      border: 1px solid #bfdbfe;
-      border-radius: 12px;
-      padding: 14px 18px;
-      margin-bottom: 20px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 12px;
-    }
-
-    .agenda-info {
-      display: flex;
-      gap: 20px;
-      flex-wrap: wrap;
-      font-size: 0.88rem;
-    }
-
-    .agenda-item {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .agenda-item .label {
-      font-size: 0.75rem;
-      font-weight: 700;
-      color: var(--muted);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .agenda-item .value {
-      font-weight: 800;
-      color: var(--primary);
-      font-size: 0.98rem;
-      margin-top: 2px;
     }
 
     /* BARRA DE FILTRO E NAVEGAÇÃO */
@@ -247,7 +207,7 @@
       gap: 10px;
     }
 
-    /* PAINEL DE CARDS DE HORÁRIO (Aparece ao filtrar por data) */
+    /* PAINEL DE CARDS DE HORÁRIO (OCULTO POR DEFAULT) */
     .slots-summary-grid {
       display: none;
       grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
@@ -279,29 +239,12 @@
       color: var(--success);
     }
 
-    /* BLOCO AGRUPADOR POR DIA */
-    .date-block {
-      margin-bottom: 28px;
-    }
-
-    .date-block-title {
-      font-size: 1.15rem;
-      font-weight: 800;
-      color: var(--text);
-      margin-bottom: 12px;
-      padding-bottom: 6px;
-      border-bottom: 2px solid var(--primary);
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
     /* SEÇÕES E TABELAS DE RESERVA POR HORÁRIO */
     .time-section {
       background: var(--card-bg);
       border-radius: 12px;
       box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-      margin-bottom: 14px;
+      margin-bottom: 20px;
       overflow: hidden;
       border: 1px solid var(--border);
     }
@@ -310,7 +253,7 @@
       background-color: #f1f5f9;
       padding: 12px 16px;
       font-weight: 700;
-      font-size: 0.95rem;
+      font-size: 1rem;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -344,25 +287,23 @@
       border-bottom: none;
     }
 
-    /* AJUSTES DE TIPOGRAFIA DA TABELA */
-    .code-text {
-      color: var(--muted);
-      font-family: monospace;
-      font-size: 0.9rem;
-    }
-
-    .client-name {
+    .badge-code {
+      background-color: #e0f2fe;
+      color: #0369a1;
+      padding: 4px 8px;
+      border-radius: 4px;
       font-weight: 700;
-      color: var(--text);
+      font-family: monospace;
     }
 
-    /* ESTILOS DE STATUS DE RESERVA */
+    /* ESTILOS DE STATUS DE RESERVA (REALIZADA / CANCELADA / PASSADA) */
     tr.status-realizada {
       background-color: var(--success-light) !important;
     }
 
-    tr.status-realizada .code-text,
-    tr.status-realizada .client-name {
+    tr.status-realizada .badge-code {
+      background-color: #d1fae5;
+      color: #065f46;
       text-decoration: line-through;
     }
 
@@ -376,8 +317,9 @@
       color: #991b1b;
     }
 
-    tr.status-cancelada .code-text,
-    tr.status-cancelada .client-name {
+    tr.status-cancelada .badge-code {
+      background-color: #fee2e2;
+      color: #991b1b;
       text-decoration: line-through;
     }
 
@@ -404,39 +346,46 @@
       padding: 20px;
       color: var(--muted);
     }
+
+    /* ESTILOS DO MODAL DE ADICIONAR RESERVA MANUALMENTE */
+    .modal-form-group {
+      margin-bottom: 14px;
+    }
+
+    .modal-form-group label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+      color: var(--text);
+    }
+
+    .modal-form-group input,
+    .modal-form-group select,
+    .modal-form-group textarea {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-family: inherit;
+    }
   </style>
 </head>
 <body>
 
   <!-- CABEÇALHO DO PAINEL -->
   <div class="header">
-    <h1>📅 Reservas Riso - Painel ADM</h1>
+    <h1>Reservas Riso - Painel ADM</h1>
     <div class="top-actions">
-      <button class="btn-primary" onclick="abrirModalCalendario()">📅 Gerenciar Datas</button>
+      <!-- REQUISITO 1: Botão para adicionar reserva manualmente direto pela tela de Admin -->
+      <button class="btn-primary" onclick="abrirModalNovaReserva()">➕ Adicionar Reserva</button>
+      <button class="btn-secondary" onclick="abrirModalCalendario()">Datas Liberadas</button>
       <a href="https://riso.art.br/res_index.html" class="btn-secondary" target="_blank">← Site do Cliente</a>
     </div>
   </div>
 
-  <!-- CARD DE PANORAMA DA AGENDA -->
-  <div class="agenda-summary-card">
-    <div class="agenda-info">
-      <div class="agenda-item">
-        <span class="label">Dias Liberados</span>
-        <span class="value" id="lblTotalDias">--</span>
-      </div>
-      <div class="agenda-item">
-        <span class="label">Próxima Data Aberta</span>
-        <span class="value" id="lblProximaData">--</span>
-      </div>
-      <div class="agenda-item">
-        <span class="label">Última Data Aberta</span>
-        <span class="value" id="lblUltimaData">--</span>
-      </div>
-    </div>
-    <button class="btn-secondary" style="font-size: 0.8rem;" onclick="abrirModalCalendario()">⚙️ Alterar Agenda</button>
-  </div>
-
-  <!-- BARRA DE FILTRO E NAVEGAÇÃO -->
+  <!-- BARRA DE FILTRO E MODO DE VISUALIZAÇÃO -->
   <div class="filter-card">
     <div class="filter-group">
       <label for="dataConsulta">Data do serviço:</label>
@@ -448,7 +397,7 @@
     </div>
   </div>
 
-  <!-- RESUMO DE OCUPAÇÃO DOS SLOTS DE HORÁRIO -->
+  <!-- RESUMO DE OCUPAÇÃO DOS SLOTS DE HORÁRIO (Aparece somente ao filtrar por data) -->
   <div class="slots-summary-grid" id="slotsSummary"></div>
 
   <!-- CONTAINER DE SEÇÕES / TABELAS DE RESERVAS -->
@@ -488,6 +437,62 @@
     </div>
   </div>
 
+  <!-- MODAL ADICIONAR RESERVA MANUALMENTE (ADM) -->
+  <div class="modal-overlay" id="modalNovaReserva">
+    <div class="modal-card" style="max-width: 480px;">
+      <div class="modal-header">
+        <h2>Nova Reserva (Manual)</h2>
+        <button class="btn-action-icon" onclick="fecharModalNovaReserva()">✕</button>
+      </div>
+      <form id="formNovaReserva" onsubmit="adicionarReservaManual(event)">
+        <div class="modal-form-group">
+          <label for="admNome">Nome do Cliente:</label>
+          <input type="text" id="admNome" required placeholder="Nome completo">
+        </div>
+        <div class="modal-form-group">
+          <label for="admTelefone">Telefone (WhatsApp):</label>
+          <input type="tel" id="admTelefone" required placeholder="(24) 99999-9999">
+        </div>
+        <div class="modal-form-group">
+          <label for="admData">Data da Reserva:</label>
+          <input type="date" id="admData" required>
+        </div>
+        <div class="modal-form-group">
+          <label for="admHorario">Horário:</label>
+          <select id="admHorario" required>
+            <option value="" disabled selected>Selecione o horário</option>
+            <option value="12:00">12:00</option>
+            <option value="13:00">13:00</option>
+            <option value="14:00">14:00</option>
+            <option value="15:00">15:00</option>
+            <option value="16:00">16:00</option>
+          </select>
+        </div>
+        <div class="modal-form-group">
+          <label for="admPessoas">Quantidade de Pessoas:</label>
+          <select id="admPessoas" required>
+            <option value="1">1 pessoa</option>
+            <option value="2" selected>2 pessoas</option>
+            <option value="3">3 pessoas</option>
+            <option value="4">4 pessoas</option>
+            <option value="5">5 pessoas</option>
+            <option value="6">6 pessoas</option>
+            <option value="7">7 pessoas</option>
+            <option value="8">8 pessoas</option>
+          </select>
+        </div>
+        <div class="modal-form-group">
+          <label for="admObs">Observações / Alergias:</label>
+          <textarea id="admObs" rows="3" placeholder="Opcional"></textarea>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-secondary" onclick="fecharModalNovaReserva()">Cancelar</button>
+          <button type="submit" class="btn-primary" id="btnSalvarReservaManual">Salvar Reserva</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- JAVASCRIPT DE INTEGRAÇÃO ADM -->
   <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbyOyPr6hWM80KTGIhsrML7wWX1qxhGDW96j-uFNJqX-MmLcD-uiTLTojW5kkFdK870L/exec";
@@ -499,10 +504,14 @@
     const inputData = document.getElementById("dataConsulta");
     const hojeIso = new Date().toISOString().split("T")[0];
 
+    // INICIALIZAÇÃO: Padrão carrega TODAS as reservas (campo de data vazio)
     inputData.value = "";
     carregarTodasReservas();
     carregarDatasLiberadasDoServidor();
 
+    /**
+     * Quando o usuário escolhe uma data no input de filtro
+     */
     function aoAlterarFiltroData() {
       const dataVal = inputData.value;
       const btnLimpar = document.getElementById("btnLimparFiltro");
@@ -517,6 +526,9 @@
       }
     }
 
+    /**
+     * Limpa o filtro de data e volta ao modo geral (exibe tudo e oculta os cards de contador)
+     */
     function limparFiltroData() {
       inputData.value = "";
       document.getElementById("btnLimparFiltro").style.display = "none";
@@ -535,6 +547,9 @@
       }
     }
 
+    /**
+     * Carrega todas as reservas do sistema (Default)
+     */
     async function carregarTodasReservas() {
       const containerReservas = document.getElementById("containerReservas");
       containerReservas.innerHTML = `<div class="loading-overlay">Buscando todas as reservas...</div>`;
@@ -549,7 +564,7 @@
             const hojeDataObj = parseDataPtBr(formatarDataIsoParaPtBr(hojeIso));
             lista = lista.filter(r => parseDataPtBr(r.data) >= hojeDataObj);
           }
-          renderAgrupadoPorDataEHorario(lista);
+          renderSecoesPorHorario(lista, true);
         } else {
           containerReservas.innerHTML = `<div class="loading-overlay">Nenhuma reserva encontrada.</div>`;
         }
@@ -558,6 +573,9 @@
       }
     }
 
+    /**
+     * Carrega reservas filtradas por uma data específica + atualiza o contador dos cards
+     */
     async function carregarReservasPorData(dataVal) {
       const summaryContainer = document.getElementById("slotsSummary");
       const containerReservas = document.getElementById("containerReservas");
@@ -566,6 +584,7 @@
       containerReservas.innerHTML = `<div class="loading-overlay">Buscando reservas do dia...</div>`;
 
       try {
+        // Busca disponibilidade para os cards
         const respDisp = await fetch(`${API_URL}?data=${dataVal}`);
         const resDisp = await respDisp.json();
 
@@ -573,6 +592,7 @@
           renderSlotsSummary(resDisp.disponibilidade);
         }
 
+        // Busca lista de reservas daquela data
         const respList = await fetch(`${API_URL}?data=${dataVal}&action=getReservasData`);
         const resList = await respList.json();
 
@@ -582,7 +602,7 @@
             const hojeDataObj = parseDataPtBr(formatarDataIsoParaPtBr(hojeIso));
             lista = lista.filter(r => parseDataPtBr(r.data) >= hojeDataObj);
           }
-          renderAgrupadoPorDataEHorario(lista);
+          renderSecoesPorHorario(lista, false);
         } else {
           containerReservas.innerHTML = `<div class="loading-overlay">Nenhuma reserva encontrada para esta data.</div>`;
         }
@@ -604,16 +624,20 @@
         const temReserva = info.ocupadas > 0;
         const classeCapacidade = temReserva ? "capacity has-reservations" : "capacity";
 
+        // REQUISITO 2: Wording alterado para "x/x vagas ocupadas"
         card.innerHTML = `
           <div class="time">${horario}</div>
-          <div class="${classeCapacidade}">${info.ocupadas}/8 pessoas</div>
+          <div class="${classeCapacidade}">${info.ocupadas}/8 vagas ocupadas</div>
         `;
 
         summaryContainer.appendChild(card);
       });
     }
 
-    function renderAgrupadoPorDataEHorario(reservas) {
+    /**
+     * Agrupa as reservas em blocos/seções por horário
+     */
+    function renderSecoesPorHorario(reservas, exibeDataNaLinha = false) {
       const containerReservas = document.getElementById("containerReservas");
       containerReservas.innerHTML = "";
 
@@ -622,6 +646,7 @@
         return;
       }
 
+      // Ordena cronologicamente por data e horário
       reservas.sort((a, b) => {
         const dataA = parseDataPtBr(a.data);
         const dataB = parseDataPtBr(b.data);
@@ -629,100 +654,93 @@
         return a.horario.localeCompare(b.horario);
       });
 
-      const estrutura = {};
+      // Agrupa por chave
+      const grupos = {};
       reservas.forEach(res => {
-        if (!estrutura[res.data]) estrutura[res.data] = {};
-        if (!estrutura[res.data][res.horario]) estrutura[res.data][res.horario] = [];
-        estrutura[res.data][res.horario].push(res);
+        const chave = exibeDataNaLinha ? `${res.data} - ${res.horario}` : res.horario;
+        if (!grupos[chave]) grupos[chave] = [];
+        grupos[chave].push(res);
       });
 
       const hojeObj = parseDataPtBr(formatarDataIsoParaPtBr(hojeIso));
 
-      Object.keys(estrutura).forEach(dataChave => {
-        const dateBlock = document.createElement("div");
-        dateBlock.className = "date-block";
+      Object.keys(grupos).forEach(chaveSlot => {
+        const listaSlot = grupos[chaveSlot];
+        const totalPessoas = listaSlot.reduce((acc, r) => acc + (r.codigo === "CANCELADA" ? 0 : Number(r.pessoas)), 0);
 
-        const titleDiv = document.createElement("div");
-        titleDiv.className = "date-block-title";
-        titleDiv.innerHTML = `📅 Data: ${dataChave}`;
-        dateBlock.appendChild(titleDiv);
+        const section = document.createElement("div");
+        section.className = "time-section";
 
-        const horariosDoDia = estrutura[dataChave];
+        // REQUISITO 2 e REQUISITO 3: Wording "x/x vagas ocupadas" e remoção do ícone de calendário nas seções
+        let htmlHeader = `
+          <div class="time-section-header">
+            <span>Horário: ${chaveSlot}</span>
+            <span style="font-size: 0.85rem; font-weight: 600; color: var(--muted);">${totalPessoas}/8 vagas ocupadas</span>
+          </div>
+        `;
 
-        Object.keys(horariosDoDia).forEach(horarioChave => {
-          const listaSlot = horariosDoDia[horarioChave];
-          const totalPessoas = listaSlot.reduce((acc, r) => acc + (r.codigo === "CANCELADA" ? 0 : Number(r.pessoas)), 0);
+        let htmlTabela = `
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width: 40px; text-align: center;">✓</th>
+                  <th>Código</th>
+                  ${exibeDataNaLinha ? '<th>Data</th>' : ''}
+                  <th>Cliente</th>
+                  <th>Telefone</th>
+                  <th>Pessoas</th>
+                  <th>Observações / Alergias</th>
+                  <th style="width: 60px; text-align: center;">Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+        `;
 
-          const section = document.createElement("div");
-          section.className = "time-section";
+        listaSlot.forEach(res => {
+          const ehRealizada = res.codigo === "REALIZADA";
+          const ehCancelada = res.codigo === "CANCELADA";
+          const dataResObj = parseDataPtBr(res.data);
+          const ehPassada = dataResObj < hojeObj;
 
-          let htmlHeader = `
-            <div class="time-section-header">
-              <span>🕒 Horário: ${horarioChave}</span>
-              <span style="font-size: 0.85rem; font-weight: 600; color: var(--muted);">${totalPessoas}/8 pessoas ocupadas</span>
-            </div>
+          let classeLinha = "";
+          if (ehCancelada) classeLinha = "status-cancelada";
+          else if (ehRealizada) classeLinha = "status-realizada";
+          else if (ehPassada && exibeDataNaLinha) classeLinha = "data-passada";
+
+          const codigoExibicao = ehCancelada ? "CANCELADA" : (ehRealizada ? "REALIZADA" : res.codigo);
+
+          htmlTabela += `
+            <tr class="${classeLinha}">
+              <td style="text-align: center;">
+                <input type="checkbox" ${ehRealizada ? 'checked' : ''} ${ehCancelada ? 'disabled' : ''} 
+                  onchange="alterarStatusReserva('${res.codigoOriginal || res.codigo}', this.checked ? 'REALIZADA' : 'REABRIR')">
+              </td>
+              <td><span class="badge-code">${codigoExibicao}</span></td>
+              ${exibeDataNaLinha ? `<td><strong>${res.data}</strong></td>` : ''}
+              <td>${res.nome}</td>
+              <td><a href="https://wa.me/55${res.telefone.replace(/\D/g,'')}" target="_blank" style="color:var(--primary); font-weight: 600;">${res.telefone}</a></td>
+              <td><strong>${res.pessoas} p</strong></td>
+              <td>${res.observacoes}</td>
+              <td style="text-align: center;">
+                ${ehCancelada ? 
+                  `<button class="btn-action-icon" title="Reabrir Reserva" onclick="alterarStatusReserva('${res.codigoOriginal}', 'REABRIR')">🔄</button>` : 
+                  `<button class="btn-action-icon" title="Cancelar Reserva" onclick="alterarStatusReserva('${res.codigo}', 'CANCELADA')">🗑️</button>`
+                }
+              </td>
+            </tr>
           `;
-
-          let htmlTabela = `
-            <div class="table-container">
-              <table>
-                <thead>
-                  <tr>
-                    <th style="width: 40px; text-align: center;">✓</th>
-                    <th>Código</th>
-                    <th>Cliente</th>
-                    <th>Telefone</th>
-                    <th>Pessoas</th>
-                    <th>Observações / Alergias</th>
-                    <th style="width: 60px; text-align: center;">Ações</th>
-                  </tr>
-                </thead>
-                <tbody>
-          `;
-
-          listaSlot.forEach(res => {
-            const ehRealizada = res.codigo === "REALIZADA";
-            const ehCancelada = res.codigo === "CANCELADA";
-            const dataResObj = parseDataPtBr(res.data);
-            const ehPassada = dataResObj < hojeObj;
-
-            let classeLinha = "";
-            if (ehCancelada) classeLinha = "status-cancelada";
-            else if (ehRealizada) classeLinha = "status-realizada";
-            else if (ehPassada) classeLinha = "data-passada";
-
-            const codigoExibicao = ehCancelada ? "CANCELADA" : (ehRealizada ? "REALIZADA" : res.codigo);
-
-            htmlTabela += `
-              <tr class="${classeLinha}">
-                <td style="text-align: center;">
-                  <input type="checkbox" ${ehRealizada ? 'checked' : ''} ${ehCancelada ? 'disabled' : ''} 
-                    onchange="alterarStatusReserva('${res.codigoOriginal || res.codigo}', this.checked ? 'REALIZADA' : 'REABRIR')">
-                </td>
-                <td><span class="code-text">${codigoExibicao}</span></td>
-                <td><span class="client-name">${res.nome}</span></td>
-                <td><a href="https://wa.me/55${res.telefone.replace(/\D/g,'')}" target="_blank" style="color:var(--primary); font-weight: 600;">${res.telefone}</a></td>
-                <td><strong>${res.pessoas} p</strong></td>
-                <td>${res.observacoes}</td>
-                <td style="text-align: center;">
-                  ${ehCancelada ? 
-                    `<button class="btn-action-icon" title="Reabrir Reserva" onclick="alterarStatusReserva('${res.codigoOriginal}', 'REABRIR')">🔄</button>` : 
-                    `<button class="btn-action-icon" title="Cancelar Reserva" onclick="alterarStatusReserva('${res.codigo}', 'CANCELADA')">🗑️</button>`
-                  }
-                </td>
-              </tr>
-            `;
-          });
-
-          htmlTabela += `</tbody></table></div>`;
-          section.innerHTML = htmlHeader + htmlTabela;
-          dateBlock.appendChild(section);
         });
 
-        containerReservas.appendChild(dateBlock);
+        htmlTabela += `</tbody></table></div>`;
+        section.innerHTML = htmlHeader + htmlTabela;
+        containerReservas.appendChild(section);
       });
     }
 
+    /**
+     * Envia solicitação de alteração de status para o Apps Script
+     */
     async function alterarStatusReserva(codigoReserva, novoStatus) {
       try {
         const payload = {
@@ -753,7 +771,64 @@
     }
 
     /* ==========================================================================
-       MODAL DO CALENDÁRIO & RESUMO DE DATAS LIBERADAS
+       MODAL DE ADICIONAR RESERVA MANUALMENTE (ADM)
+       ========================================================================== */
+    function abrirModalNovaReserva() {
+      document.getElementById("modalNovaReserva").style.display = "flex";
+      document.getElementById("admData").value = inputData.value || hojeIso;
+    }
+
+    function fecharModalNovaReserva() {
+      document.getElementById("modalNovaReserva").style.display = "none";
+      document.getElementById("formNovaReserva").reset();
+    }
+
+    async function adicionarReservaManual(e) {
+      e.preventDefault();
+      const btnSalvar = document.getElementById("btnSalvarReservaManual");
+      btnSalvar.disabled = true;
+      btnSalvar.innerText = "Salvando...";
+
+      const payload = {
+        nome: document.getElementById("admNome").value.trim(),
+        telefone: document.getElementById("admTelefone").value.trim(),
+        dataReserva: document.getElementById("admData").value,
+        horario: document.getElementById("admHorario").value,
+        pessoas: document.getElementById("admPessoas").value,
+        observacoes: document.getElementById("admObs").value.trim() || "Reserva inserida manualmente pelo ADM"
+      };
+
+      try {
+        const response = await fetch(API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+        btnSalvar.disabled = false;
+        btnSalvar.innerText = "Salvar Reserva";
+
+        if (result.status === "success") {
+          fecharModalNovaReserva();
+          alert("Reserva adicionada com sucesso! Código: " + result.codigoReserva);
+          if (inputData.value) {
+            carregarReservasPorData(inputData.value);
+          } else {
+            carregarTodasReservas();
+          }
+        } else {
+          alert(result.message || "Erro ao salvar reserva.");
+        }
+      } catch (err) {
+        btnSalvar.disabled = false;
+        btnSalvar.innerText = "Salvar Reserva";
+        alert("Erro de conexão ao salvar reserva.");
+      }
+    }
+
+    /* ==========================================================================
+       MODAL DO CALENDÁRIO DE DATAS LIBERADAS
        ========================================================================== */
 
     async function carregarDatasLiberadasDoServidor() {
@@ -762,33 +837,8 @@
         const result = await response.json();
         if (result.status === "success" && Array.isArray(result.datasLiberadas)) {
           datasLiberadasSet = new Set(result.datasLiberadas);
-          atualizarCardPanoramaAgenda();
         }
       } catch (err) {}
-    }
-
-    function atualizarCardPanoramaAgenda() {
-      const totalDias = datasLiberadasSet.size;
-      document.getElementById("lblTotalDias").innerText = totalDias > 0 ? `${totalDias} dia(s)` : "Nenhum dia";
-
-      if (totalDias === 0) {
-        document.getElementById("lblProximaData").innerText = "Nenhuma";
-        document.getElementById("lblUltimaData").innerText = "Nenhuma";
-        return;
-      }
-
-      const listaOrdenada = Array.from(datasLiberadasSet).sort((a, b) => parseDataPtBr(a) - parseDataPtBr(b));
-      const hojeDataObj = parseDataPtBr(formatarDataIsoParaPtBr(hojeIso));
-
-      const futuras = listaOrdenada.filter(d => parseDataPtBr(d) >= hojeDataObj);
-
-      if (futuras.length > 0) {
-        document.getElementById("lblProximaData").innerText = futuras[0];
-        document.getElementById("lblUltimaData").innerText = futuras[futuras.length - 1];
-      } else {
-        document.getElementById("lblProximaData").innerText = "Passadas";
-        document.getElementById("lblUltimaData").innerText = listaOrdenada[listaOrdenada.length - 1];
-      }
     }
 
     function abrirModalCalendario() {
@@ -872,7 +922,6 @@
         btnSalvar.innerText = "Salvar Datas";
 
         if (result.status === "success") {
-          atualizarCardPanoramaAgenda();
           fecharModalCalendario();
           alert("Datas liberadas salvas com sucesso!");
         } else {
