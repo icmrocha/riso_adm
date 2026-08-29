@@ -1,0 +1,87 @@
+function doGet(e) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const abaMaster = ss.getSheetByName("MASTER");
+  const abaLog = ss.getSheetByName("LOG");
+  
+  const dadosMaster = abaMaster.getDataRange().getValues();
+  dadosMaster.shift(); // Remove cabeçalho
+
+  const dadosLog = abaLog ? abaLog.getDataRange().getValues() : [];
+  if (dadosLog.length > 0) dadosLog.shift(); // Remove cabeçalho
+
+  // Mapeia a ÚLTIMA marcação de cada tarefa (sobrescrevendo registros antigos)
+  const statusMap = {};
+  dadosLog.forEach(linha => {
+    const [idServico, categoria, tarefa, tag, status, horario] = linha;
+    if (!categoria || !tarefa) return;
+
+    const chave = `${categoria}_${tarefa}`;
+    statusMap[chave] = {
+      done: status === "CONCLUIDO",
+      completedAt: horario || ""
+    };
+  });
+
+  const categoriasMap = {};
+
+  dadosMaster.forEach(linha => {
+    const [categoria, tarefa, tag] = linha;
+    if (!categoria || !tarefa) return;
+
+    if (!categoriasMap[categoria]) {
+      categoriasMap[categoria] = { category: categoria, tasks: [] };
+    }
+
+    const chave = `${categoria}_${tarefa}`;
+    const logExistente = statusMap[chave];
+
+    categoriasMap[categoria].tasks.push({
+      text: tarefa,
+      tag: tag || "Cozinha",
+      done: logExistente ? logExistente.done : false,
+      completedAt: logExistente ? logExistente.completedAt : ""
+    });
+  });
+
+  return ContentService.createTextOutput(JSON.stringify(Object.values(categoriasMap)))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function doPost(e) {
+  try {
+    const dadosRecebidos = JSON.parse(e.postData.contents);
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+    // Ação 1: Adicionar nova tarefa na aba MASTER
+    if (dadosRecebidos.acao === "CRIAR_TAREFA") {
+      const abaMaster = ss.getSheetByName("MASTER");
+      abaMaster.appendRow([
+        dadosRecebidos.categoria,
+        dadosRecebidos.tarefa,
+        dadosRecebidos.tag || "Cozinha"
+      ]);
+      return ContentService.createTextOutput(JSON.stringify({ status: "sucesso" }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // Ação 2: Gravar marcação de status na aba LOG
+    const abaLog = ss.getSheetByName("LOG");
+    const { idServico, categoria, tarefa, tag, status, horarioConclusao } = dadosRecebidos;
+
+    abaLog.appendRow([
+      idServico || "SERVICO_PADRAO",
+      categoria,
+      tarefa,
+      tag,
+      status ? "CONCLUIDO" : "PENDENTE",
+      horarioConclusao || ""
+    ]);
+
+    return ContentService.createTextOutput(JSON.stringify({ status: "sucesso" }))
+      .setMimeType(ContentService.MimeType.JSON);
+
+  } catch (error) {
+    return ContentService.createTextOutput(JSON.stringify({ status: "erro", mensagem: error.toString() }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}

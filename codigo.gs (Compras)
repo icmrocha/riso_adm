@@ -1,0 +1,121 @@
+// LÊ A LISTA MASTER + ESTADO DAS COMPRAS EM TEMPO REAL
+function doGet() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheetInsumos = ss.getSheetByName("Lista de Insumos");
+  var sheetCompras = ss.getSheetByName("Compras_Ativas");
+  
+  // 1. Lê a Lista Master de Insumos (Planilha)
+  var dataInsumos = sheetInsumos.getDataRange().getValues();
+  var masterList = [];
+  
+  for (var i = 1; i < dataInsumos.length; i++) {
+    var ingrediente = dataInsumos[i][0];
+    var categoria = dataInsumos[i][1];
+    var preco = dataInsumos[i][2];
+    
+    if (ingrediente && ingrediente.toString().trim() !== "") {
+      var precoFormatado = "";
+      if (typeof preco === 'number') {
+        precoFormatado = "R$ " + preco.toFixed(2).replace(".", ",");
+      } else if (preco) {
+        precoFormatado = preco.toString();
+      }
+
+      masterList.push({
+        name: ingrediente.toString().trim(),
+        category: (categoria && categoria.toString().trim() !== "") ? categoria.toString().trim() : "Outros",
+        price: precoFormatado
+      });
+    }
+  }
+
+  // 2. Lê os Itens Ativos (Preenchidos ou Adicionados à mão)
+  var savedState = {};
+  var extraItems = [];
+
+  if (sheetCompras) {
+    var dataCompras = sheetCompras.getDataRange().getValues();
+    for (var j = 1; j < dataCompras.length; j++) {
+      var itemNome = dataCompras[j][0];
+      var qtd = dataCompras[j][1];
+      var done = dataCompras[j][2];
+      var isExtra = dataCompras[j][3]; // Coluna D (opcional para identificar extras)
+      
+      if (itemNome && itemNome.toString().trim() !== "") {
+        var cleanName = itemNome.toString().trim();
+        savedState[cleanName] = {
+          qty: qtd ? qtd.toString() : "",
+          done: done === true || done.toString().toUpperCase() === "TRUE"
+        };
+
+        if (isExtra === true || isExtra.toString().toUpperCase() === "TRUE") {
+          extraItems.push({
+            name: cleanName,
+            category: "(Adicionados à mão)",
+            price: "",
+            isExtra: true
+          });
+        }
+      }
+    }
+  }
+
+  var response = {
+    masterList: masterList,
+    extraItems: extraItems,
+    savedState: savedState
+  };
+  
+  return ContentService.createTextOutput(JSON.stringify(response))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+// SALVA OU RESETA AS ALTERAÇÕES REALIZADAS EM QUALQUER DISPOSITIVO
+function doPost(e) {
+  try {
+    var contents = JSON.parse(e.postData.contents);
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheetCompras = ss.getSheetByName("Compras_Ativas");
+    
+    if (!sheetCompras) {
+      sheetCompras = ss.insertSheet("Compras_Ativas");
+    }
+    
+    // Reseta todas as compras na nuvem
+    if (contents.action === "RESET") {
+      sheetCompras.clearContents();
+      sheetCompras.appendRow(["Ingrediente", "Quantidade", "Comprado", "IsExtra"]);
+      return ContentService.createTextOutput(JSON.stringify({ status: "success" })).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // Grava itens ativos e extras
+    var stateToSave = contents.savedState || {};
+    var extraItems = contents.extraItems || [];
+
+    sheetCompras.clearContents();
+    sheetCompras.appendRow(["Ingrediente", "Quantidade", "Comprado", "IsExtra"]);
+
+    // Salva itens extras adicionados à mão
+    extraItems.forEach(function(item) {
+      var itemState = stateToSave[item.name] || { qty: "1", done: false };
+      sheetCompras.appendRow([item.name, itemState.qty, itemState.done, true]);
+    });
+
+    // Salva itens regulares com quantidade preenchida
+    for (var itemName in stateToSave) {
+      var itemData = stateToSave[itemName];
+      var isAlreadySaved = extraItems.some(function(e) { return e.name === itemName; });
+      
+      if (!isAlreadySaved && itemData.qty && itemData.qty.toString().trim() !== "") {
+        sheetCompras.appendRow([itemName, itemData.qty, itemData.done, false]);
+      }
+    }
+
+    return ContentService.createTextOutput(JSON.stringify({ status: "success" }))
+      .setMimeType(ContentService.MimeType.JSON);
+
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({ status: "error", message: err.toString() }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
